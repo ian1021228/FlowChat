@@ -43,7 +43,7 @@
         .google-btn:hover { background: var(--hover-bg); }
         .google-btn img { width: 18px; height: 18px; }
 
-        /* Profile Setup (For Canvas / Mock Auth) */
+        /* Profile Setup */
         #profile-screen { align-items: center; justify-content: center; background-color: #f0f2f5; }
         .setup-form { display: flex; flex-direction: column; gap: 16px; text-align: left; }
         .setup-form input { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; outline: none; }
@@ -187,7 +187,7 @@
         </div>
     </div>
 
-    <!-- 3. Profile Setup (For Canvas testing / Anonymous mapping) -->
+    <!-- 3. Profile Setup -->
     <div id="profile-screen" class="screen">
         <div class="login-card">
             <h1>設定個人檔案</h1>
@@ -269,14 +269,13 @@
     <!-- Firebase & Application Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         // ==========================================
-        // 配置與初始化 (🚨 部署到 GitHub 必填 🚨)
+        // 配置與初始化 (🚨 Firebase 金鑰 🚨)
         // ==========================================
-        // 請至 Firebase 主控台建立免費專案，並將您的配置貼到這裡
-        const myFirebaseConfig = {
+        const firebaseConfig = {
             apiKey: "AIzaSyDRSP3-v0Qv7len-njTQFGJhb8c4eNDRpk",
             authDomain: "flowchat-web.firebaseapp.com",
             projectId: "flowchat-web",
@@ -285,25 +284,17 @@
             appId: "1:413457465329:web:45d5b0e2bdbe90fb104e50"
         };
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myFirebaseConfig;
-        
-        if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("你的")) {
-            console.warn("提示：準備部署到外部網站時，請記得填寫上方 myFirebaseConfig 的金鑰！");
-        }
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'flowchat-github-deploy';
-        const IMGUR_CLIENT_ID = "2bcc4cb7db28a8d";
-
+        
         // 全域狀態
         let currentUser = null;
         let myProfile = { name: '', email: '' };
         let currentRoomId = 'lobby'; 
         let currentRoomName = '大廳公用頻道';
-        let allMessages = []; // In-memory cache for Rule 2 constraints
-        let dmContacts = new Set(); // 記錄私聊過的對象 Email
+        let allMessages = []; 
+        let dmContacts = new Set(); 
         let unsubscribeSnapshot = null;
 
         // DOM 元素
@@ -344,7 +335,7 @@
             return colors[Math.abs(hash) % colors.length];
         }
 
-        // Debug 1: 私人對話房間 ID 生成邏輯 (確保 A找B 和 B找A 是同一個房間)
+        // 私人對話房間 ID 生成邏輯
         function getDmRoomId(email1, email2) {
             return 'dm_' + [email1.toLowerCase(), email2.toLowerCase()].sort().join('|');
         }
@@ -361,27 +352,14 @@
         // ==========================================
         // 認證邏輯 (Firebase Auth)
         // ==========================================
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                }
-            } catch (err) {
-                console.warn("Canvas Auth Token error, waiting for manual login.", err);
-            }
-        };
-        initAuth();
-
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                // 如果是標準 Google 登入，會自帶 Email
                 if (user.email) {
                     myProfile.email = user.email.toLowerCase();
                     myProfile.name = user.displayName || user.email.split('@')[0];
                     startApp();
                 } else {
-                    // 如果是在 Canvas 環境下使用 Custom Token 或是匿名登入，缺乏 Email，需強制設定
                     switchScreen('profile');
                 }
             } else {
@@ -425,10 +403,10 @@
             loadMessages();
         }
 
-        // 載入所有公開訊息，並在客戶端過濾 (遵循 Rule 1 & 2)
+        // 載入所有公開訊息
         function loadMessages() {
             if (!currentUser) return;
-            const msgsRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+            const msgsRef = collection(db, 'messages');
             
             if (unsubscribeSnapshot) unsubscribeSnapshot();
             
@@ -448,12 +426,11 @@
             });
         }
 
-        // Debug 3: 自動從歷史訊息解析出聯絡人列表
+        // 自動從歷史訊息解析出聯絡人列表
         function extractContactsFromMessages() {
             dmContacts.clear();
             allMessages.forEach(msg => {
                 if (msg.chatId.startsWith('dm_') && msg.chatId.includes(myProfile.email)) {
-                    // 萃取對方的 Email
                     const emails = msg.chatId.replace('dm_', '').split('|');
                     const otherEmail = emails[0] === myProfile.email ? emails[1] : emails[0];
                     if (otherEmail) dmContacts.add(otherEmail);
@@ -477,7 +454,7 @@
             listEl.innerHTML = html;
         }
 
-        // 切換房間 (公開大廳或私人對話)
+        // 切換房間
         window.switchRoom = function(roomId, roomName) {
             currentRoomId = roomId;
             currentRoomName = roomName;
@@ -486,13 +463,13 @@
             document.getElementById('chat-header-title').textContent = roomName;
             const isLobby = roomId === 'lobby';
             document.getElementById('chat-header-icon').textContent = isLobby ? 'tag' : 'person';
-            document.getElementById('chat-header-desc').textContent = isLobby ? '與所有人公開交流' : '端對端加密私人對話 (模擬)';
+            document.getElementById('chat-header-desc').textContent = isLobby ? '與所有人公開交流' : '端對端加密私人對話';
             document.getElementById('chat-input').placeholder = isLobby ? '傳送訊息至大廳...' : `傳送訊息給 ${roomName}...`;
             
             document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
             if(isLobby) document.getElementById('room-lobby').classList.add('active');
             
-            renderSidebarContacts(); // 確保側邊欄標籤亮起
+            renderSidebarContacts(); 
             renderMessages();
         }
 
@@ -511,7 +488,7 @@
             switchRoom(newRoomId, emailInput);
         }
 
-        // Debug 2: 在前端執行記憶體過濾渲染 (In-Memory Filtering)
+        // 在前端執行記憶體過濾渲染
         function renderMessages() {
             const chatHistoryEl = document.getElementById('chat-history');
             const isAtBottom = chatHistoryEl.scrollHeight - chatHistoryEl.clientHeight - chatHistoryEl.scrollTop < 100;
@@ -561,7 +538,6 @@
 
             chatHistoryEl.innerHTML = html;
             
-            // 若原本就在底部，則自動捲動
             if (isAtBottom) {
                 chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
             }
@@ -583,7 +559,7 @@
             };
 
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), payload);
+                await addDoc(collection(db, 'messages'), payload);
                 // 自動拉到底部
                 setTimeout(() => {
                     const el = document.getElementById('chat-history');
@@ -609,7 +585,7 @@
         });
 
         // ==========================================
-        // 檔案上傳系統 (Imgur & Base64)
+        // 檔案與圖片上傳系統 (全自建 Base64 直傳版)
         // ==========================================
         const fileInput = document.getElementById('file-upload-input');
         const uploadStatus = document.getElementById('upload-status');
@@ -617,42 +593,31 @@
         fileInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            fileInput.value = ''; // Reset
+            fileInput.value = ''; // 重置輸入框
 
             uploadStatus.style.display = 'flex';
             
-            // Debug 5: 處理圖床延遲與容量限制
-            if (file.type.startsWith('image/')) {
-                const formData = new FormData();
-                formData.append('image', file);
-                try {
-                    const res = await fetch('https://api.imgur.com/3/image', {
-                        method: 'POST',
-                        headers: { 'Authorization': `Client-ID ${IMGUR_CLIENT_ID}` },
-                        body: formData
-                    });
-                    const result = await res.json();
-                    if (result.success) {
-                        await sendPayload('image', '分享了一張圖片', result.data.link, file.name);
-                    } else throw new Error("Imgur API Error");
-                } catch (err) {
-                    showToast("圖片上傳失敗，可能是檔案過大或網路異常", "error");
-                }
-            } else {
-                if (file.size > 50 * 1024) {
-                    showToast(`檔案過大 (${Math.round(file.size/1024)}KB)，文字資料庫僅支援 50KB 以下文檔上傳`, "error");
-                    uploadStatus.style.display = 'none';
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    await sendPayload('file', '分享了一個檔案', event.target.result, file.name);
-                    uploadStatus.style.display = 'none';
-                };
-                reader.readAsDataURL(file);
-                return; // FileReader is async but doesn't use promise here, so we exit and hide status in onload
+            // 為了避免單筆資料庫容量爆炸，我們將檔案限制在 800KB 以下
+            if (file.size > 800 * 1024) {
+                showToast(`檔案過大 (${Math.round(file.size/1024)}KB)！請上傳 800KB 以下的圖片或檔案`, "error");
+                uploadStatus.style.display = 'none';
+                return;
             }
-            uploadStatus.style.display = 'none';
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                // 判斷是圖片還是文件
+                const isImage = file.type.startsWith('image/');
+                const msgType = isImage ? 'image' : 'file';
+                const msgText = isImage ? '分享了一張圖片' : '分享了一個檔案';
+                
+                // 直接將檔案編碼傳入你的 Firebase
+                await sendPayload(msgType, msgText, event.target.result, file.name);
+                uploadStatus.style.display = 'none';
+            };
+            
+            // 將檔案讀取為 Base64 字串
+            reader.readAsDataURL(file);
         });
 
     </script>
