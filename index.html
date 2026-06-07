@@ -376,6 +376,14 @@
         window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; if(id==='new-chat-modal') document.getElementById('new-chat-email').value=''; };
         window.openImageModal = (url) => { document.getElementById('modal-img-target').src = url; window.openModal('image-modal'); };
 
+        // [修復] 補回 getAvatarColor 函式
+        function getAvatarColor(name) {
+            const colors = ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#8e24aa', '#00acc1', '#f06292'];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return colors[Math.abs(hash) % colors.length];
+        }
+
         // ==========================================
         // 全域功能綁定: 編輯、刪除、回覆、反應
         // ==========================================
