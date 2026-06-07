@@ -357,8 +357,7 @@
             appId: "1:413457465329:web:45d5b0e2bdbe90fb104e50"
         };
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myFirebaseConfig;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
+        
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -373,6 +372,7 @@
         let replyingToId = null, replyingToText = null, replyingToName = null;
         let isWindowFocused = true;
         let roomLastRead = JSON.parse(localStorage.getItem('flowchat_reads')) || {};
+        let sessionDMs = new Set(); // 新增：記錄當前連線中主動發起的私訊對象
 
         // 避免 Prompt / Confirm 在 Canvas 遭阻擋，使用自訂 Modal
         let confirmAction = null;
@@ -432,21 +432,6 @@
             return colors[Math.abs(hash) % colors.length];
         }
 
-        // Auth 初始化
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else if (!auth.currentUser) {
-                    // Fallback to anonymous for environment compatibility if custom token is not present
-                    await signInAnonymously(auth);
-                }
-            } catch (err) {
-                console.warn("Auth initialization problem", err);
-            }
-        };
-        initAuth();
-
         onAuthStateChanged(auth, user => {
             if (user) { 
                 currentUser = user;
@@ -489,18 +474,18 @@
             fetchMessages(); setupTypingListener();
         }
 
-        // 歷史訊息加載 (避免 Complex Queries 導致權限錯誤)
+        // 歷史訊息加載
         function fetchMessages() {
             if (!currentUser) return;
             if (unsubscribeSnapshot) unsubscribeSnapshot();
             
-            // 替換為嚴格路徑
-            const msgCollection = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+            // 恢復使用標準集合路徑，避免複雜權限報錯
+            const msgCollection = collection(db, 'messages');
             
             unsubscribeSnapshot = onSnapshot(msgCollection, snapshot => {
                 let temp = [];
                 snapshot.forEach(doc => temp.push({ id: doc.id, ...doc.data() }));
-                // 前端記憶體排序，取代 orderBy，避免需要建立索引
+                // 前端記憶體排序
                 temp.sort((a, b) => a.timestamp - b.timestamp);
 
                 if (allMessages.length > 0 && temp.length > 0) {
@@ -517,7 +502,7 @@
                 updateReadReceipt();
             }, error => {
                 console.error("Firestore error:", error);
-                showToast("讀取對話失敗", "error");
+                if(error.code === 'permission-denied') showToast("資料庫權限不足，請檢查 Firebase 規則設定", "error");
             });
         }
 
@@ -537,7 +522,10 @@
             updateBadge('lobby', lobbyMsgs);
 
             let html = '';
-            dmSet.forEach(email => {
+            // 合併歷史紀錄與本次主動新增的聯絡人
+            const combinedDMs = new Set([...dmSet, ...sessionDMs]);
+            
+            combinedDMs.forEach(email => {
                 if (localStorage.getItem(`hidden_${email}`)) return;
                 const msgs = allMessages.filter(m => m.chatId === getDmRoomId(myProfile.email, email));
                 const unread = msgs.filter(m => m.senderEmail !== myProfile.email && m.timestamp > (roomLastRead[msgs[0]?.chatId] || 0)).length;
@@ -566,8 +554,16 @@
             if(b) { b.textContent = unread; b.style.display = unread > 0 ? 'inline-block' : 'none'; }
         }
 
-        window.hideDM = (email, e) => { e.stopPropagation(); localStorage.setItem(`hidden_${email}`, "true"); if(currentRoomId === getDmRoomId(myProfile.email, email)) switchRoom('lobby', '大廳公用頻道'); renderSidebarContacts(); };
-        window.startPrivateChat = email => { email = email.toLowerCase(); if(email===myProfile.email) return; localStorage.removeItem(`hidden_${email}`); switchRoom(getDmRoomId(myProfile.email, email), email.split('@')[0]); };
+        window.hideDM = (email, e) => { e.stopPropagation(); localStorage.setItem(`hidden_${email}`, "true"); sessionDMs.delete(email); if(currentRoomId === getDmRoomId(myProfile.email, email)) switchRoom('lobby', '大廳公用頻道'); renderSidebarContacts(); };
+        
+        window.startPrivateChat = email => { 
+            email = email.trim().toLowerCase(); 
+            if(email===myProfile.email) return; 
+            localStorage.removeItem(`hidden_${email}`); 
+            sessionDMs.add(email); // 將聯絡人加入暫存，觸發側邊欄更新
+            renderSidebarContacts();
+            switchRoom(getDmRoomId(myProfile.email, email), email.split('@')[0]); 
+        };
 
         window.switchRoom = (id, name) => {
             currentRoomId = id; currentRoomName = name;
@@ -578,10 +574,7 @@
             renderMessages();
             updateReadReceipt();
             setupTypingListener();
-            cancelReply();
-        };
-
-        // 已讀標記 (使用嚴格路徑，加入信箱驗證)
+        // 已讀標記
         let readTimeout;
         function updateReadReceipt() {
             if(!isWindowFocused || !currentUser || !myProfile.email) return;
@@ -589,27 +582,30 @@
             readTimeout = setTimeout(() => {
                 roomLastRead[currentRoomId] = Date.now();
                 localStorage.setItem('flowchat_reads', JSON.stringify(roomLastRead));
-                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'readReceipts', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true });
+                // 恢復為一般路徑
+                setDoc(doc(db, 'readReceipts', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true }).catch(e=>{});
                 renderSidebarContacts();
             }, 1000);
         }
 
-        // 正在輸入... (使用嚴格路徑)
+        // 正在輸入...
         function setupTypingListener() {
             if(!currentUser) return;
             if(unsubscribeTyping) unsubscribeTyping();
-            unsubscribeTyping = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'typing', currentRoomId), docSnap => {
+            // 恢復為一般路徑
+            unsubscribeTyping = onSnapshot(doc(db, 'typing', currentRoomId), docSnap => {
                 const data = docSnap.data() || {};
                 const typers = Object.keys(data).filter(email => email !== myProfile.email && (Date.now() - data[email] < 3000));
                 const ind = document.getElementById('typing-indicator');
                 if(typers.length > 0) { ind.textContent = `${typers.map(e=>e.split('@')[0]).join(', ')} 正在輸入...`; ind.style.display = 'block'; }
                 else ind.style.display = 'none';
-            });
+            }, e=>{});
         }
         
         document.getElementById('chat-input').addEventListener('input', () => {
             if(!typingTimeout && currentUser && myProfile.email) {
-                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'typing', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true });
+                // 恢復為一般路徑
+                setDoc(doc(db, 'typing', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true }).catch(e=>{});
                 typingTimeout = setTimeout(()=> { typingTimeout = null; }, 2000);
             }
         });
@@ -648,26 +644,28 @@
             }
         };
 
-        // 表情反應 (使用嚴格路徑)
+        // 表情反應
         window.toggleReaction = async (msgId, emoji) => {
             const msg = allMessages.find(m => m.id === msgId);
             if(!msg || !currentUser) return;
             const reacts = msg.reactions || {};
             const users = reacts[emoji] || [];
             let newUsers = users.includes(myProfile.email) ? users.filter(u => u !== myProfile.email) : [...users, myProfile.email];
-            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', msgId), { [`reactions.${emoji}`]: newUsers });
+            // 恢復為一般路徑
+            await updateDoc(doc(db, 'messages', msgId), { [`reactions.${emoji}`]: newUsers }).catch(e=>{});
         };
 
         // Render Engine
         let globalReadStates = {};
         const runReadSnap = () => {
             if(!currentUser) return;
-            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'readReceipts'), snap => { 
+            // 恢復為一般路徑
+            onSnapshot(collection(db, 'readReceipts'), snap => { 
                 snap.forEach(d => globalReadStates[d.id] = d.data()); 
                 renderMessages(); 
-            });
+            }, e=>{});
         };
-        // 延遲註冊，確保 appId 可以被完整載入
+        // 延遲註冊
         setTimeout(runReadSnap, 1000);
 
         function renderMessages(preserveScroll = false) {
@@ -772,14 +770,12 @@
                 history.scrollTop += (history.scrollHeight - oldScroll);
             } else if (isAtBottom || !preserveScroll) {
                 history.scrollTop = history.scrollHeight;
-            }
-        }
-
-        // Send, Edit & Delete 操作使用嚴格路徑與 Custom Modal
+        // Send, Edit & Delete 操作使用 Custom Modal
         window.deleteMessage = (id) => {
             customConfirm("確定要收回此訊息嗎？", async () => {
                 try {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', id));
+                    // 恢復為一般路徑
+                    await deleteDoc(doc(db, 'messages', id));
                     showToast('訊息已收回', 'success');
                 } catch(e) {
                     showToast('收回失敗，權限不足或網路異常', 'error');
@@ -791,7 +787,8 @@
             customPrompt("修改訊息：", old, async (n) => {
                 if(n && n !== old) {
                     try {
-                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', id), { message: n.trim(), isEdited: true });
+                        // 恢復為一般路徑
+                        await updateDoc(doc(db, 'messages', id), { message: n.trim(), isEdited: true });
                         showToast('訊息已更新', 'success');
                     } catch (e) {
                         showToast('編輯失敗', 'error');
@@ -810,11 +807,12 @@
                 cancelReply(); 
             }
             try {
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), payload);
+                // 恢復為一般路徑
+                await addDoc(collection(db, 'messages'), payload);
                 document.getElementById('chat-history').scrollTop = 999999;
             } catch(e) {
                 console.error("發送失敗", e);
-                showToast("發送失敗", "error");
+                showToast("發送失敗，請確認資料庫權限設定", "error");
             }
         }
 
