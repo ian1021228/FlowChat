@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlowChat - 企業級通訊</title>
+    <title>FlowChat - 企業級通訊平台</title>
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
     
     <style>
-        /* CSS Variables - 支援深色模式切換 */
+        /* CSS Variables - 支援深色模式 */
         :root {
             --bg-color: #ffffff;
             --sidebar-bg: #f8f9fa;
@@ -72,11 +72,12 @@
         .sidebar-header { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border-color); }
         .logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; color: var(--primary-blue); }
         .header-actions { display: flex; gap: 8px; }
-        .icon-btn-simple { background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; transition: 0.2s; }
+        .icon-btn-simple { background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 50%; transition: 0.2s; }
         .icon-btn-simple:hover { background: var(--hover-bg); color: var(--text-primary); }
 
         .current-user { padding: 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-color); }
-        .user-avatar-small { width: 36px; height: 36px; border-radius: 50%; background: #34a853; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+        .user-avatar-small { width: 36px; height: 36px; border-radius: 50%; background: #34a853; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; overflow: hidden; }
+        .user-avatar-small img { width: 100%; height: 100%; object-fit: cover; }
         .user-info { display: flex; flex-direction: column; overflow: hidden; }
         .user-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .user-email { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -92,11 +93,18 @@
         
         .room-item-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
         .room-item-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .room-item-email { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+        .room-item-email { font-size: 11px; color: var(--text-secondary); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
         .unread-badge { background: var(--google-red); color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; margin-left: 8px; }
+        
+        /* 側邊欄操作按鈕 */
         .room-item-actions { display: none; align-items: center; gap: 4px; padding-left: 8px; }
         .room-item:hover .room-item-actions { display: flex; }
+        .room-item-actions.always-show { display: flex; }
+        .icon-action { font-size: 18px; color: var(--text-secondary); cursor: pointer; border-radius: 50%; padding: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .icon-action:hover { background: rgba(0,0,0,0.08); color: var(--text-primary); }
+        .icon-action.accept:hover { color: #1e8e3e; background: rgba(30,142,62,0.1); }
+        .icon-action.decline:hover { color: #ea4335; background: rgba(234,67,53,0.1); }
 
         /* Main Chat Area */
         .main-chat { flex: 1; display: flex; flex-direction: column; position: relative; background: var(--bg-color); min-width: 0; }
@@ -105,7 +113,7 @@
         .chat-header { height: 64px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
         .chat-header-info { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 500; }
         .room-desc { font-size: 13px; color: var(--text-secondary); font-weight: 400; margin-left: 8px; }
-        .search-box { display: flex; align-items: center; background: var(--hover-bg); border-radius: 20px; padding: 4px 12px; }
+        .search-box { display: flex; align-items: center; background: var(--hover-bg); border-radius: 20px; padding: 6px 12px; }
         .search-box input { border: none; background: transparent; outline: none; color: var(--text-primary); font-size: 13px; width: 150px; }
         
         /* Chat History & Pagination */
@@ -115,7 +123,9 @@
 
         .message-row { display: flex; gap: 16px; position: relative; }
         .message-row.mine { flex-direction: row-reverse; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; color: white; flex-shrink: 0; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; color: white; flex-shrink: 0; overflow: hidden; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
         .msg-content { display: flex; flex-direction: column; max-width: 70%; }
         .message-row.mine .msg-content { align-items: flex-end; }
         .msg-header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
@@ -168,18 +178,39 @@
         .input-container textarea { flex: 1; border: none; outline: none; font-size: 15px; padding: 8px 0; font-family: var(--font-family); background: transparent; color: var(--text-primary); resize: none; max-height: 120px; min-height: 24px; }
         .action-buttons { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
         
+        /* Toast & Modals */
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: #323232; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateY(-20px); transition: 0.3s; }
         .toast.show { opacity: 1; transform: translateY(0); }
         .toast.error { background: var(--google-red); }
+
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; }
+        .modal-content { background: var(--bg-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
+        .modal-title { font-size: 18px; font-weight: 500; margin-bottom: 16px; }
+        .modal-input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-color); color: var(--text-primary); outline: none; margin-bottom: 16px; }
+        .modal-input:focus { border-color: var(--primary-blue); }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+        .btn-text { background: none; border: none; padding: 8px 16px; color: var(--text-secondary); cursor: pointer; font-weight: 500; border-radius: 4px; }
+        .btn-text:hover { background: var(--hover-bg); }
     </style>
 </head>
 <body>
     <div id="toast-container"></div>
 
     <!-- Modals -->
-    <div id="image-modal" class="screen" style="position:fixed; z-index:10000; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
-        <button onclick="document.getElementById('image-modal').classList.remove('active')" style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:32px; cursor:pointer;" class="material-icons-outlined">close</button>
+    <div id="new-chat-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">發起私人對話</div>
+            <input type="email" id="new-chat-email" class="modal-input" placeholder="請輸入對方的 Email...">
+            <div class="modal-actions">
+                <button class="btn-text" onclick="closeModal('new-chat-modal')">取消</button>
+                <button class="submit-btn" onclick="startPrivateChat(document.getElementById('new-chat-email').value)">開始聊天</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="image-modal" class="modal-overlay" style="background:rgba(0,0,0,0.85);">
+        <button onclick="closeModal('image-modal')" style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:32px; cursor:pointer;" class="material-icons-outlined">close</button>
         <img id="modal-img-target" src="" style="max-width:90%; max-height:90%; border-radius:4px;">
     </div>
 
@@ -188,7 +219,7 @@
     
     <div id="auth-screen" class="screen">
         <div class="login-card">
-            <h1>FlowChat</h1><p>企業級端對端加密通訊平台</p>
+            <h1>FlowChat</h1><p>企業級端對端通訊平台</p>
             <button class="google-btn" id="btn-google-login">
                 <svg viewBox="0 0 48 48" width="18"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
                 Google 登入
@@ -213,7 +244,7 @@
             <div class="sidebar-header">
                 <div class="logo"><span class="material-icons-outlined">forum</span> FlowChat</div>
                 <div class="header-actions">
-                    <button class="icon-btn-simple" id="btn-theme-toggle" title="切換深色模式"><span class="material-icons-outlined">dark_mode</span></button>
+                    <button class="icon-btn-simple" id="btn-theme-toggle" title="深淺色切換"><span class="material-icons-outlined">dark_mode</span></button>
                     <button class="icon-btn-simple" id="btn-logout" title="登出"><span class="material-icons-outlined">logout</span></button>
                 </div>
             </div>
@@ -231,10 +262,12 @@
                     <div class="room-item-content"><span class="room-item-name">大廳公用頻道</span></div>
                     <span id="badge-lobby" class="unread-badge" style="display:none;">0</span>
                 </div>
+                
                 <div class="section-title" style="margin-top: 24px;">
                     私人對話 
-                    <button class="icon-btn-simple" onclick="const e=prompt('輸入對方 Email：'); if(e) startPrivateChat(e);" title="新增"><span class="material-icons-outlined" style="font-size:16px;">add</span></button>
+                    <button class="icon-btn-simple" onclick="openModal('new-chat-modal')" title="新增對話"><span class="material-icons-outlined" style="font-size:16px;">add</span></button>
                 </div>
+                <!-- 聯絡人清單渲染區 (含勾勾叉叉要求區塊) -->
                 <div id="dm-list"></div>
             </div>
         </div>
@@ -247,7 +280,7 @@
                 </div>
                 <div class="search-box">
                     <span class="material-icons-outlined" style="font-size:16px; color:var(--text-secondary);">search</span>
-                    <input type="text" id="search-input" placeholder="在對話中搜尋...">
+                    <input type="text" id="search-input" placeholder="搜尋對話...">
                 </div>
             </div>
 
@@ -262,13 +295,18 @@
             </div>
 
             <div class="chat-input-area">
+                <div class="upload-status" id="upload-status" style="display:none; align-items:center; gap:8px; font-size:12px; color:var(--primary-blue); margin-bottom:8px;">
+                    <div class="spinner" style="width:16px; height:16px; border-width:2px;"></div>
+                    <span>處理中...</span>
+                </div>
                 <div class="typing-indicator" id="typing-indicator">有人正在輸入...</div>
+                
                 <div class="input-container">
-                    <textarea id="chat-input" placeholder="傳送訊息... (Shift+Enter 換行，支援拖曳圖片貼上)"></textarea>
+                    <textarea id="chat-input" placeholder="傳送訊息... (Shift+Enter 換行)"></textarea>
                     <div class="action-buttons">
-                        <button class="icon-btn-simple" onclick="document.getElementById('file-upload-input').click()"><span class="material-icons-outlined">attach_file</span></button>
+                        <button class="icon-btn-simple" onclick="document.getElementById('file-upload-input').click()" title="附加檔案"><span class="material-icons-outlined">attach_file</span></button>
                         <input type="file" id="file-upload-input" accept="image/*,.pdf,.doc,.docx,.xls,.zip" style="display:none;">
-                        <button class="icon-btn-simple" id="send-btn" style="color:var(--primary-blue);"><span class="material-icons-outlined">send</span></button>
+                        <button class="icon-btn-simple" id="send-btn" style="color:var(--primary-blue);" title="傳送"><span class="material-icons-outlined">send</span></button>
                     </div>
                 </div>
             </div>
@@ -281,6 +319,9 @@
         import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, limit, setDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+        // ==========================================
+        // 配置與初始化 (🚨 Firebase 金鑰 🚨)
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDRSP3-v0Qv7len-njTQFGJhb8c4eNDRpk",
             authDomain: "flowchat-web.firebaseapp.com",
@@ -294,57 +335,88 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // 10. 離線快取支援 (Offline Persistence)
-        enableIndexedDbPersistence(db).catch(err => console.warn("Offline DB unavailable, falling back to online only.", err));
+        // 離線快取支援
+        enableIndexedDbPersistence(db).catch(err => console.warn("Offline DB unavailable:", err));
 
-        // State
-        let currentUser = null, myProfile = { name: '', email: '' };
+        // 核心狀態
+        let currentUser = null, myProfile = { name: '', email: '', photoURL: '' };
         let currentRoomId = 'lobby', currentRoomName = '大廳公用頻道';
         let allMessages = [], msgLimit = 50; 
+        let dmStats = {}, dmProfiles = {}; 
+        let sessionDMs = new Set(); // 記錄我主動開啟但尚未傳訊的聯絡人
         let unsubscribeSnapshot = null, unsubscribeTyping = null, typingTimeout = null;
         let replyingToId = null, replyingToText = null;
         let isWindowFocused = true;
         let roomLastRead = JSON.parse(localStorage.getItem('flowchat_reads')) || {};
 
-        // 5. 深色模式切換 (Dark Mode Toggle)
+        // 深色模式設定
         if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
         document.getElementById('btn-theme-toggle').onclick = () => {
             document.body.classList.toggle('dark');
             localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
         };
 
-        // Window Focus tracking for Notifications & Read Receipts
+        // Window Focus 追蹤 (用於音效與已讀狀態)
         window.onfocus = () => { isWindowFocused = true; document.title = "FlowChat - 企業級通訊"; updateReadReceipt(); };
         window.onblur = () => { isWindowFocused = false; };
 
-        // Utils
+        // 共用函式
         const escapeHtml = t => (t||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
         window.showToast = (msg, type='info') => {
             const c = document.getElementById('toast-container'), t = document.createElement('div');
-            t.className = `toast ${type}`; t.innerHTML = msg; c.appendChild(t);
-            setTimeout(() => t.classList.add('show'), 10);
+            t.className = `toast ${type}`; t.innerHTML = `<span class="material-icons-outlined">${type==='error'?'error':(type==='success'?'check_circle':'info')}</span> ${escapeHtml(msg)}`;
+            c.appendChild(t); setTimeout(() => t.classList.add('show'), 10);
             setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(), 300); }, 3000);
         };
         const getDmRoomId = (e1, e2) => 'dm_' + [e1.toLowerCase(), e2.toLowerCase()].sort().join('|');
         const playSound = () => { try { const c = new (window.AudioContext || window.webkitAudioContext)(); const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(587.33, c.currentTime); o.frequency.setValueAtTime(880, c.currentTime+0.1); g.gain.setValueAtTime(0.1, c.currentTime); g.gain.exponentialRampToValueAtTime(0.01, c.currentTime+0.4); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+0.4); } catch(e){} };
 
-        // Auth
+        window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; if(id==='new-chat-modal') document.getElementById('new-chat-email').focus(); };
+        window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; if(id==='new-chat-modal') document.getElementById('new-chat-email').value=''; };
+        window.openImageModal = (url) => { document.getElementById('modal-img-target').src = url; window.openModal('image-modal'); };
+
+        // 認證邏輯
         onAuthStateChanged(auth, user => {
-            if (user && user.email) { currentUser = user; myProfile.email = user.email.toLowerCase(); myProfile.name = user.displayName || user.email.split('@')[0]; startApp(); }
+            if (user && user.email) { 
+                currentUser = user; 
+                myProfile.email = user.email.toLowerCase(); 
+                myProfile.name = user.displayName || user.email.split('@')[0]; 
+                myProfile.photoURL = user.photoURL || ''; // [修復 2] 正確存取大頭貼
+                startApp(); 
+            }
             else { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(user ? 'profile-screen' : 'auth-screen').classList.add('active'); }
         });
+        
         document.getElementById('btn-google-login').onclick = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e => showToast("登入失敗", "error"));
         document.getElementById('btn-logout').onclick = () => signOut(auth);
 
         function startApp() {
             document.getElementById('my-name').textContent = myProfile.name;
             document.getElementById('my-email').textContent = myProfile.email;
+            
+            // 渲染左側欄自己的大頭貼
+            const avatarEl = document.getElementById('my-avatar');
+            if(myProfile.photoURL) {
+                avatarEl.innerHTML = `<img src="${myProfile.photoURL}">`;
+                avatarEl.style.background = 'transparent';
+            } else {
+                avatarEl.textContent = myProfile.name.charAt(0).toUpperCase();
+                avatarEl.style.background = getAvatarColor(myProfile.name);
+            }
+
             document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
             document.getElementById('main-app').classList.add('active');
             fetchMessages(); setupTypingListener();
         }
 
-        // 3. 歷史訊息分頁加載 (Pagination)
+        // 獲取頭貼顏色
+        function getAvatarColor(name) {
+            const colors = ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#8e24aa', '#00acc1', '#f06292'];
+            let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        // 讀取歷史訊息
         function fetchMessages() {
             if (unsubscribeSnapshot) unsubscribeSnapshot();
             const q = query(collection(db, 'messages'), orderBy('timestamp', 'desc'), limit(msgLimit));
@@ -352,9 +424,9 @@
             unsubscribeSnapshot = onSnapshot(q, snapshot => {
                 let temp = [];
                 snapshot.forEach(doc => temp.push({ id: doc.id, ...doc.data() }));
-                temp.reverse(); // Ensure chronological order
+                temp.reverse();
 
-                // 2. 音效通知
+                // 音效通知
                 if (allMessages.length > 0 && temp.length > 0) {
                     const latest = temp[temp.length - 1];
                     const oldLatest = allMessages[allMessages.length - 1];
@@ -364,50 +436,102 @@
                 }
 
                 allMessages = temp;
+                analyzeDMStates(); // 更新私訊狀態與聯絡人資料
                 renderSidebarContacts(); 
-                renderMessages(true); // true = maintain scroll position if possible
+                renderMessages(true); 
                 updateReadReceipt();
+            }, error => {
+                console.error("Firestore error:", error);
+                if(error.code === 'permission-denied') showToast("權限不足，請確認是否登入，或檢查 Firebase 安全性規則", "error");
             });
         }
 
         window.loadOlderMessages = () => { msgLimit += 50; fetchMessages(); };
 
-        // 1. 未讀訊息紅點與計數 (Unread Badges) & Sidebar
-        function renderSidebarContacts() {
-            let dmSet = new Set(), dmProfiles = {};
+        // [回歸 4] 分析歷史對話，建立狀態引擎 (用於勾勾叉叉要求判斷)
+        function analyzeDMStates() {
+            dmStats = {}; dmProfiles = {};
             allMessages.forEach(m => {
                 if(m.chatId.startsWith('dm_') && m.chatId.includes(myProfile.email)) {
                     const other = m.chatId.replace('dm_','').split('|').find(e => e !== myProfile.email);
-                    if(other) { dmSet.add(other); if(m.senderEmail !== myProfile.email) dmProfiles[other] = m.senderName; }
+                    if(!other) return;
+                    const isMine = m.senderEmail === myProfile.email;
+
+                    // 記錄對方名稱與大頭貼
+                    if(!dmProfiles[other]) dmProfiles[other] = { name: other.split('@')[0], photo: '' };
+                    if(!isMine) {
+                        if(m.senderName) dmProfiles[other].name = m.senderName;
+                        if(m.senderPhoto) dmProfiles[other].photo = m.senderPhoto;
+                    }
+
+                    // 記錄互動狀態
+                    if(!dmStats[other]) dmStats[other] = { iReplied: false, latestMsgId: m.id, lastTime: m.timestamp };
+                    if(isMine) dmStats[other].iReplied = true;
+                    if(m.timestamp >= dmStats[other].lastTime) {
+                        dmStats[other].latestMsgId = m.id;
+                        dmStats[other].lastTime = m.timestamp;
+                    }
+                }
+            });
+        }
+
+        // 渲染側邊欄 (包含要求區塊與垃圾桶)
+        function renderSidebarContacts() {
+            const listEl = document.getElementById('dm-list');
+            let activeHtml = '', requestHtml = '', reqCount = 0;
+            
+            // Lobby Badge
+            updateBadge('lobby', allMessages.filter(m => m.chatId === 'lobby'));
+
+            // 聯集所有聯絡人 (有歷史紀錄的 + 這次網頁剛發起的)
+            const allDMs = new Set([...sessionDMs, ...Object.keys(dmStats)]);
+
+            allDMs.forEach(email => {
+                const isHidden = localStorage.getItem(`hidden_${email}`);
+                const stats = dmStats[email] || { iReplied: false, latestMsgId: 'manual' };
+                
+                // 如果被隱藏，且沒有新訊息進來，則不渲染
+                if(isHidden && isHidden === stats.latestMsgId) return;
+
+                const profile = dmProfiles[email] || { name: email.split('@')[0] };
+                const isActiveRoom = currentRoomId === getDmRoomId(myProfile.email, email);
+                const isRequest = !stats.iReplied && !sessionDMs.has(email);
+                
+                const msgs = allMessages.filter(m => m.chatId === getDmRoomId(myProfile.email, email));
+                const unread = msgs.filter(m => m.senderEmail !== myProfile.email && m.timestamp > (roomLastRead[msgs[0]?.chatId] || 0)).length;
+                const badgeHtml = unread > 0 ? `<span class="unread-badge">${unread}</span>` : '';
+
+                if (isRequest) {
+                    reqCount++;
+                    requestHtml += `
+                        <div class="room-item ${isActiveRoom ? 'active' : ''}" onclick="switchRoom('${getDmRoomId(myProfile.email, email)}', '${escapeHtml(profile.name)}')">
+                            <span class="material-icons-outlined room-item-icon" style="color:var(--google-red);">mark_email_unread</span>
+                            <div class="room-item-content">
+                                <span class="room-item-name">${escapeHtml(profile.name)}</span>
+                                <span class="room-item-email">${escapeHtml(email)}</span>
+                            </div>
+                            <div class="room-item-actions always-show">
+                                <span class="material-icons-outlined icon-action accept" title="接受" onclick="acceptDM('${escapeHtml(email)}', event)">check</span>
+                                <span class="material-icons-outlined icon-action decline" title="拒絕" onclick="hideDM('${escapeHtml(email)}', '${stats.latestMsgId}', event)">close</span>
+                            </div>
+                        </div>`;
+                } else {
+                    activeHtml += `
+                        <div class="room-item ${isActiveRoom ? 'active' : ''}" onclick="switchRoom('${getDmRoomId(myProfile.email, email)}', '${escapeHtml(profile.name)}')">
+                            <span class="material-icons-outlined room-item-icon">person</span>
+                            <div class="room-item-content">
+                                <span class="room-item-name">${escapeHtml(profile.name)}</span>
+                                <span class="room-item-email">${escapeHtml(email)}</span>
+                            </div>
+                            ${badgeHtml}
+                            <div class="room-item-actions">
+                                <span class="material-icons-outlined icon-action" title="刪除/隱藏對話" onclick="hideDM('${escapeHtml(email)}', '${stats.latestMsgId}', event)">delete</span>
+                            </div>
+                        </div>`;
                 }
             });
 
-            // Lobby Badge
-            const lobbyMsgs = allMessages.filter(m => m.chatId === 'lobby');
-            updateBadge('lobby', lobbyMsgs);
-
-            let html = '';
-            dmSet.forEach(email => {
-                if (localStorage.getItem(`hidden_${email}`)) return;
-                const msgs = allMessages.filter(m => m.chatId === getDmRoomId(myProfile.email, email));
-                const unread = msgs.filter(m => m.senderEmail !== myProfile.email && m.timestamp > (roomLastRead[msgs[0].chatId] || 0)).length;
-                const name = dmProfiles[email] || email.split('@')[0];
-                const active = currentRoomId === getDmRoomId(myProfile.email, email) ? 'active' : '';
-                
-                html += `
-                    <div class="room-item ${active}" onclick="switchRoom('${getDmRoomId(myProfile.email, email)}', '${escapeHtml(name)}')">
-                        <span class="material-icons-outlined room-item-icon">person</span>
-                        <div class="room-item-content">
-                            <span class="room-item-name">${escapeHtml(name)}</span>
-                            <span class="room-item-email">${escapeHtml(email)}</span>
-                        </div>
-                        ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
-                        <div class="room-item-actions">
-                            <button class="icon-btn-simple" onclick="hideDM('${email}', event)" title="隱藏對話"><span class="material-icons-outlined" style="font-size:16px;">delete</span></button>
-                        </div>
-                    </div>`;
-            });
-            document.getElementById('dm-list').innerHTML = html;
+            listEl.innerHTML = (reqCount > 0 ? `<div class="section-title" style="color:var(--google-red); margin-top:16px;">新對話要求 (${reqCount})</div>${requestHtml}<div class="section-title" style="margin-top:16px;">目前的對話</div>` : '') + activeHtml;
         }
 
         function updateBadge(roomId, msgs) {
@@ -416,8 +540,28 @@
             if(b) { b.textContent = unread; b.style.display = unread > 0 ? 'inline-block' : 'none'; }
         }
 
-        window.hideDM = (email, e) => { e.stopPropagation(); localStorage.setItem(`hidden_${email}`, "true"); if(currentRoomId === getDmRoomId(myProfile.email, email)) switchRoom('lobby', '大廳公用頻道'); renderSidebarContacts(); };
-        window.startPrivateChat = email => { email = email.toLowerCase(); if(email===myProfile.email) return; localStorage.removeItem(`hidden_${email}`); switchRoom(getDmRoomId(myProfile.email, email), email.split('@')[0]); };
+        // 側邊欄操作 (接受與刪除)
+        window.acceptDM = (email, e) => { e.stopPropagation(); sessionDMs.add(email); renderSidebarContacts(); switchRoom(getDmRoomId(myProfile.email, email), dmProfiles[email]?.name || email); };
+        window.hideDM = (email, msgId, e) => { 
+            e.stopPropagation(); 
+            if(!confirm(`確定要刪除/隱藏與 ${dmProfiles[email]?.name || email} 的對話嗎？`)) return;
+            localStorage.setItem(`hidden_${email}`, msgId); 
+            sessionDMs.delete(email);
+            if(currentRoomId === getDmRoomId(myProfile.email, email)) switchRoom('lobby', '大廳公用頻道'); 
+            renderSidebarContacts(); 
+        };
+
+        // 發起新對話
+        window.startPrivateChat = email => { 
+            email = email.trim().toLowerCase(); 
+            if(!email || !email.includes('@')) { showToast("無效的 Email", "error"); return; }
+            if(email===myProfile.email) { showToast("無法與自己對話", "error"); return; }
+            
+            closeModal('new-chat-modal');
+            localStorage.removeItem(`hidden_${email}`); 
+            sessionDMs.add(email); // [修復 1] 加入 session 確保立即出現在側邊欄
+            switchRoom(getDmRoomId(myProfile.email, email), dmProfiles[email]?.name || email.split('@')[0]); 
+        };
 
         window.switchRoom = (id, name) => {
             currentRoomId = id; currentRoomName = name;
@@ -425,11 +569,11 @@
             document.querySelectorAll('.room-item').forEach(el=>el.classList.remove('active'));
             if(id==='lobby') document.getElementById('room-lobby').classList.add('active');
             msgLimit = 50; fetchMessages();
-            updateReadReceipt();
-            setupTypingListener();
+            updateReadReceipt(); setupTypingListener();
+            document.getElementById('chat-input').focus();
         };
 
-        // 2. 訊息已讀狀態 (Read Receipts)
+        // 已讀狀態與防抖
         let readTimeout;
         function updateReadReceipt() {
             if(!isWindowFocused) return;
@@ -437,13 +581,12 @@
             readTimeout = setTimeout(() => {
                 roomLastRead[currentRoomId] = Date.now();
                 localStorage.setItem('flowchat_reads', JSON.stringify(roomLastRead));
-                // Update global presence for double-check marks (Debounced write)
-                setDoc(doc(db, 'readReceipts', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true });
+                setDoc(doc(db, 'readReceipts', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true }).catch(()=>{});
                 renderSidebarContacts();
-            }, 1000);
+            }, 1500);
         }
 
-        // 4. 正在輸入狀態 (Typing Indicator)
+        // 正在輸入狀態
         function setupTypingListener() {
             if(unsubscribeTyping) unsubscribeTyping();
             unsubscribeTyping = onSnapshot(doc(db, 'typing', currentRoomId), docSnap => {
@@ -452,17 +595,17 @@
                 const ind = document.getElementById('typing-indicator');
                 if(typers.length > 0) { ind.textContent = `${typers.map(e=>e.split('@')[0]).join(', ')} 正在輸入...`; ind.style.display = 'block'; }
                 else ind.style.display = 'none';
-            });
+            }, ()=>{});
         }
         
         document.getElementById('chat-input').addEventListener('input', () => {
             if(!typingTimeout) {
-                setDoc(doc(db, 'typing', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true });
+                setDoc(doc(db, 'typing', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true }).catch(()=>{});
                 typingTimeout = setTimeout(()=> { typingTimeout = null; }, 2000);
             }
         });
 
-        // 8. 訊息搜尋 (Frontend Message Search)
+        // 搜尋功能
         document.getElementById('search-input').addEventListener('input', e => {
             const term = e.target.value.toLowerCase();
             document.querySelectorAll('.message-row').forEach(row => {
@@ -471,7 +614,7 @@
             });
         });
 
-        // 6. 特定訊息回覆 (Quote Reply)
+        // 回覆與表情符號
         window.initReply = (id, text) => {
             replyingToId = id; replyingToText = text;
             document.getElementById('reply-to-name').textContent = "訊息";
@@ -481,19 +624,17 @@
         };
         window.cancelReply = () => { replyingToId = null; document.getElementById('reply-banner').style.display = 'none'; };
 
-        // 7. 表情符號回應 (Reactions)
         window.toggleReaction = async (msgId, emoji) => {
             const msg = allMessages.find(m => m.id === msgId);
             if(!msg) return;
-            const reacts = msg.reactions || {};
-            const users = reacts[emoji] || [];
+            const users = (msg.reactions || {})[emoji] || [];
             let newUsers = users.includes(myProfile.email) ? users.filter(u => u !== myProfile.email) : [...users, myProfile.email];
-            await updateDoc(doc(db, 'messages', msgId), { [`reactions.${emoji}`]: newUsers });
+            await updateDoc(doc(db, 'messages', msgId), { [`reactions.${emoji}`]: newUsers }).catch(e=>showToast("操作失敗","error"));
         };
 
-        // Render Engine
+        // 渲染引擎
         let globalReadStates = {};
-        onSnapshot(collection(db, 'readReceipts'), snap => { snap.forEach(d => globalReadStates[d.id] = d.data()); renderMessages(); });
+        onSnapshot(collection(db, 'readReceipts'), snap => { snap.forEach(d => globalReadStates[d.id] = d.data()); renderMessages(); }, ()=>{});
 
         function renderMessages(preserveScroll = false) {
             const container = document.getElementById('messages-container');
@@ -509,22 +650,24 @@
             roomMsgs.forEach(msg => {
                 const isMine = msg.senderEmail === myProfile.email;
                 const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const initial = msg.senderName.charAt(0).toUpperCase();
-                const avatarBg = getAvatarColor(msg.senderEmail);
+                
+                // 大頭貼渲染
+                let avatarBg = getAvatarColor(msg.senderEmail);
+                let avatarHtml = msg.senderPhoto ? `<img src="${escapeHtml(msg.senderPhoto)}">` : msg.senderName.charAt(0).toUpperCase();
+
                 const edited = msg.isEdited ? `<span class="edited-label">(已編輯)</span>` : '';
                 
-                // Read Receipt logic
+                // 已讀標記
                 let readText = '';
                 if(isMine && currentRoomId.startsWith('dm_')) {
                     const other = currentRoomId.replace('dm_','').split('|').find(e => e !== myProfile.email);
                     if(globalReadStates[currentRoomId] && globalReadStates[currentRoomId][other] >= msg.timestamp) readText = `<div class="read-receipt">✓ 已讀</div>`;
                 }
 
-                // Quote HTML
-                let quoteHtml = '';
-                if(msg.replyTo) quoteHtml = `<div class="quote-block">${escapeHtml(msg.replyToText)}</div>`;
+                // 引言
+                let quoteHtml = msg.replyTo ? `<div class="quote-block">${escapeHtml(msg.replyToText)}</div>` : '';
 
-                // Content & 10. Link Previews (YouTube Regex)
+                // 內容與網址預覽
                 let contentHtml = '';
                 if (msg.type === 'image') contentHtml = `<div class="img-preview" onclick="openImageModal('${escapeHtml(msg.fileUrl)}')"><img src="${escapeHtml(msg.fileUrl)}"></div>`;
                 else if (msg.type === 'file') contentHtml = `<a href="${escapeHtml(msg.fileUrl)}" download="${escapeHtml(msg.fileName)}" class="file-card"><span class="material-icons-outlined">insert_drive_file</span><div class="file-info"><span class="file-name">${escapeHtml(msg.fileName)}</span></div></a>`;
@@ -535,7 +678,7 @@
                     else contentHtml = `${quoteHtml}<div class="msg-bubble">${text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')}${edited}</div>`;
                 }
 
-                // Reactions HTML
+                // 表情符號
                 let reactHtml = '<div class="reaction-badges">';
                 const reacts = msg.reactions || {};
                 Object.keys(reacts).forEach(emoji => {
@@ -546,7 +689,7 @@
                 });
                 reactHtml += '</div>';
 
-                // Actions Hover Menu
+                // 操作按鈕
                 const safeText = msg.type === 'text' ? escapeHtml(msg.message).replace(/'/g, "\\'") : '附件';
                 let acts = `<div class="msg-actions">
                     <button class="action-icon" title="回覆" onclick="initReply('${msg.id}','${safeText}')"><span class="material-icons-outlined">reply</span></button>
@@ -554,13 +697,13 @@
                     <button class="action-icon" title="愛心" onclick="toggleReaction('${msg.id}','❤️')">❤️</button>`;
                 if(isMine) {
                     if(msg.type === 'text') acts += `<button class="action-icon" title="編輯" onclick="editMessage('${msg.id}','${safeText}')"><span class="material-icons-outlined">edit</span></button>`;
-                    acts += `<button class="action-icon" title="收回" onclick="deleteDoc(doc(db,'messages','${msg.id}'))"><span class="material-icons-outlined">delete</span></button>`;
+                    acts += `<button class="action-icon" title="收回" onclick="deleteDoc(doc(db,'messages','${msg.id}')).catch(e=>showToast('刪除失敗','error'))"><span class="material-icons-outlined">delete</span></button>`;
                 }
                 acts += `</div>`;
 
                 html += `
                     <div class="message-row ${isMine ? 'mine' : ''}">
-                        <div class="avatar" style="background-color: ${avatarBg}">${initial}</div>
+                        <div class="avatar" style="background-color: ${msg.senderPhoto ? 'transparent' : avatarBg}">${avatarHtml}</div>
                         <div class="msg-content">
                             <div class="msg-header"><span class="msg-author">${escapeHtml(msg.senderName)}</span><span class="msg-time">${timeStr}</span></div>
                             <div class="msg-content-wrapper">${contentHtml}${acts}</div>
@@ -571,33 +714,57 @@
 
             container.innerHTML = html;
             
-            // Debug 1: Pagination Scroll Fix
-            if(preserveScroll && !isAtBottom && oldScroll > 0) {
-                history.scrollTop += (history.scrollHeight - oldScroll);
-            } else if (isAtBottom || !preserveScroll) {
-                history.scrollTop = history.scrollHeight;
+            if(preserveScroll && !isAtBottom && oldScroll > 0) history.scrollTop += (history.scrollHeight - oldScroll);
+            else if (isAtBottom || !preserveScroll) history.scrollTop = history.scrollHeight;
+        }
+
+        // 發送與編輯
+        window.editMessage = async (id, old) => { const n = prompt("修改訊息：", old); if(n && n!==old) await updateDoc(doc(db, 'messages', id), { message: n.trim(), isEdited: true }).catch(e=>showToast('編輯失敗','error')); };
+        
+        async function sendPayload(type, content, fileUrl='', fileName='') {
+            if (!currentUser) { showToast("錯誤：未登入", "error"); return; }
+            
+            // [修復 3] 加入 try catch 與完整大頭貼 payload
+            const payload = { 
+                chatId: currentRoomId, 
+                senderId: currentUser.uid, 
+                senderEmail: myProfile.email, 
+                senderName: myProfile.name, 
+                senderPhoto: myProfile.photoURL, // 儲存真實照片網址
+                message: content, 
+                type, fileUrl, fileName, 
+                timestamp: Date.now(), 
+                reactions: {} 
+            };
+            if(replyingToId) { payload.replyTo = replyingToId; payload.replyToText = replyingToText; cancelReply(); } // [修復 8] 發送時清除回覆狀態
+            
+            try {
+                await addDoc(collection(db, 'messages'), payload);
+                document.getElementById('chat-history').scrollTop = 999999;
+            } catch (e) {
+                showToast("發送失敗，請檢查權限或網路", "error");
+                console.error(e);
             }
         }
 
-        // Send & Edit
-        window.editMessage = async (id, old) => { const n = prompt("修改訊息：", old); if(n && n!==old) await updateDoc(doc(db, 'messages', id), { message: n.trim(), isEdited: true }); };
-        
-        async function sendPayload(type, content, fileUrl='', fileName='') {
-            if (!currentUser) return;
-            const payload = { chatId: currentRoomId, senderId: currentUser.uid, senderEmail: myProfile.email, senderName: myProfile.name, message: content, type, fileUrl, fileName, timestamp: Date.now(), reactions: {} };
-            if(replyingToId) { payload.replyTo = replyingToId; payload.replyToText = replyingToText; cancelReply(); }
-            await addDoc(collection(db, 'messages'), payload);
-            document.getElementById('chat-history').scrollTop = 999999;
-        }
-
-        // Input Handle (Shift+Enter for newline)
+        // 輸入框操作 (Shift+Enter 換行)
         const chatInput = document.getElementById('chat-input');
         chatInput.addEventListener('keydown', e => {
-            if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('send-btn').click(); }
+            if(e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                document.getElementById('send-btn').click(); 
+            }
         });
-        document.getElementById('send-btn').onclick = () => { if(chatInput.value.trim()) { sendPayload('text', chatInput.value.trim()); chatInput.value = ''; } };
+        document.getElementById('send-btn').onclick = () => { 
+            const text = chatInput.value.trim();
+            if(text) { 
+                sendPayload('text', text); 
+                chatInput.value = ''; 
+                chatInput.focus();
+            } 
+        };
 
-        // Drag & Drop & Paste handling for uploads
+        // 檔案上傳與壓縮
         const handleFile = file => {
             const us = document.getElementById('upload-status'); us.style.display = 'flex';
             if (file.type.startsWith('image/')) {
