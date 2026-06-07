@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FlowChat - 企業級複合式聊天室</title>
+    <title>FlowChat - 企業級通訊</title>
     <!-- Fonts & Icons -->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
     
     <style>
+        /* CSS Variables - 支援深色模式切換 */
         :root {
             --bg-color: #ffffff;
             --sidebar-bg: #f8f9fa;
@@ -18,48 +19,61 @@
             --primary-blue: #1a73e8;
             --primary-blue-hover: #1557b0;
             --hover-bg: #f1f3f4;
-            --font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+            --msg-bg: #f1f3f4;
+            --msg-mine-bg: #1a73e8;
+            --msg-mine-text: #ffffff;
+            --quote-bg: rgba(0,0,0,0.05);
+            --quote-mine-bg: rgba(255,255,255,0.2);
             --google-red: #ea4335;
+            --font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+        }
+
+        body.dark {
+            --bg-color: #121212;
+            --sidebar-bg: #1e1e1e;
+            --border-color: #333333;
+            --text-primary: #e8eaed;
+            --text-secondary: #9aa0a6;
+            --hover-bg: #2d2d2d;
+            --msg-bg: #2d2d2d;
+            --msg-mine-bg: #8ab4f8;
+            --msg-mine-text: #202124;
+            --quote-bg: rgba(255,255,255,0.1);
+            --quote-mine-bg: rgba(0,0,0,0.1);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: var(--font-family); color: var(--text-primary); background-color: var(--bg-color); height: 100vh; overflow: hidden; }
+        body { font-family: var(--font-family); color: var(--text-primary); background-color: var(--bg-color); height: 100vh; overflow: hidden; transition: background-color 0.3s; }
 
-        /* --- UI Screens --- */
+        /* UI Screens */
         .screen { display: none; width: 100%; height: 100%; }
         .screen.active { display: flex; }
 
-        /* Loading Screen */
-        #loading-screen { flex-direction: column; align-items: center; justify-content: center; background: var(--bg-color); z-index: 9999; }
+        #loading-screen, #auth-screen, #profile-screen { flex-direction: column; align-items: center; justify-content: center; background: var(--bg-color); z-index: 9999; }
         .spinner { width: 40px; height: 40px; border: 4px solid var(--hover-bg); border-top: 4px solid var(--primary-blue); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Auth Screen */
-        #auth-screen { align-items: center; justify-content: center; background-color: #f0f2f5; }
-        .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; }
+        /* Auth & Profile */
+        .login-card { background: var(--bg-color); padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; max-width: 400px; width: 90%; border: 1px solid var(--border-color); }
         .login-card h1 { font-size: 24px; margin-bottom: 8px; color: var(--primary-blue); }
         .login-card p { font-size: 14px; color: var(--text-secondary); margin-bottom: 30px; }
-        .google-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 12px; background: white; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
+        .google-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 12px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--text-primary); transition: background 0.2s; }
         .google-btn:hover { background: var(--hover-bg); }
-        .google-btn img { width: 18px; height: 18px; }
-
-        /* Profile Setup */
-        #profile-screen { align-items: center; justify-content: center; background-color: #f0f2f5; }
+        
         .setup-form { display: flex; flex-direction: column; gap: 16px; text-align: left; }
-        .setup-form input { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; outline: none; }
-        .setup-form input:focus { border-color: var(--primary-blue); }
+        .setup-form input { padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; background: var(--bg-color); color: var(--text-primary); outline: none; }
         .submit-btn { background: var(--primary-blue); color: white; border: none; padding: 12px; border-radius: 4px; font-weight: 500; cursor: pointer; }
-        .submit-btn:hover { background: var(--primary-blue-hover); }
 
-        /* Main App Layout */
+        /* Main Layout */
         #main-app { flex-direction: row; }
         
         /* Sidebar */
-        .sidebar { width: 300px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar { width: 300px; background-color: var(--sidebar-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; transition: background-color 0.3s; }
         .sidebar-header { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; border-bottom: 1px solid var(--border-color); }
         .logo { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; color: var(--primary-blue); }
-        .logout-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; }
-        .logout-btn:hover { color: var(--google-red); }
+        .header-actions { display: flex; gap: 8px; }
+        .icon-btn-simple { background: none; border: none; color: var(--text-secondary); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; border-radius: 50%; transition: 0.2s; }
+        .icon-btn-simple:hover { background: var(--hover-bg); color: var(--text-primary); }
 
         .current-user { padding: 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border-color); }
         .user-avatar-small { width: 36px; height: 36px; border-radius: 50%; background: #34a853; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
@@ -69,35 +83,36 @@
 
         .nav-section { padding: 16px 8px; flex: 1; overflow-y: auto; }
         .section-title { font-size: 12px; font-weight: 700; color: var(--text-secondary); padding: 0 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .add-btn { background: none; border: none; color: var(--primary-blue); cursor: pointer; font-size: 16px; display: flex; align-items: center; padding: 4px; border-radius: 4px; transition: 0.2s; }
-        .add-btn:hover { background: rgba(26,115,232,0.1); }
         
-        /* 聊天室列表卡片 (升級版) */
         .room-item { display: flex; align-items: center; padding: 8px 12px; border-radius: 0 24px 24px 0; cursor: pointer; color: var(--text-primary); transition: background 0.15s; margin-bottom: 2px; position: relative; }
         .room-item:hover { background-color: var(--hover-bg); }
-        .room-item.active { background-color: #e8f0fe; }
+        .room-item.active { background-color: rgba(26,115,232,0.1); }
         .room-item-icon { font-size: 20px; color: var(--text-secondary); flex-shrink: 0; margin-right: 12px; }
         .room-item.active .room-item-icon, .room-item.active .room-item-name { color: var(--primary-blue); }
         
         .room-item-content { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-        .room-item-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.15s; }
-        .room-item-email { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; margin-top: 2px; }
+        .room-item-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .room-item-email { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
         
-        /* 側邊欄操作按鈕 (隱藏、接受、拒絕) */
+        .unread-badge { background: var(--google-red); color: white; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 10px; margin-left: 8px; }
         .room-item-actions { display: none; align-items: center; gap: 4px; padding-left: 8px; }
         .room-item:hover .room-item-actions { display: flex; }
-        .room-item-actions.always-show { display: flex; }
-        .icon-action { font-size: 18px; color: var(--text-secondary); cursor: pointer; border-radius: 50%; padding: 4px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .icon-action:hover { background: rgba(0,0,0,0.08); color: var(--text-primary); }
-        .icon-action.accept:hover { color: #1e8e3e; background: rgba(30,142,62,0.1); }
-        .icon-action.decline:hover { color: #ea4335; background: rgba(234,67,53,0.1); }
 
-        /* Main Chat */
+        /* Main Chat Area */
         .main-chat { flex: 1; display: flex; flex-direction: column; position: relative; background: var(--bg-color); min-width: 0; }
-        .chat-header { height: 64px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 24px; font-size: 18px; font-weight: 500; gap: 8px; }
-        .chat-header .room-desc { font-size: 13px; color: var(--text-secondary); font-weight: 400; margin-left: 8px; }
         
-        .chat-history { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+        /* Header & Search */
+        .chat-header { height: 64px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
+        .chat-header-info { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 500; }
+        .room-desc { font-size: 13px; color: var(--text-secondary); font-weight: 400; margin-left: 8px; }
+        .search-box { display: flex; align-items: center; background: var(--hover-bg); border-radius: 20px; padding: 4px 12px; }
+        .search-box input { border: none; background: transparent; outline: none; color: var(--text-primary); font-size: 13px; width: 150px; }
+        
+        /* Chat History & Pagination */
+        .chat-history { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; position: relative; }
+        .load-more-btn { text-align: center; color: var(--primary-blue); font-size: 13px; cursor: pointer; padding: 10px; display: none; }
+        .load-more-btn:hover { text-decoration: underline; }
+
         .message-row { display: flex; gap: 16px; position: relative; }
         .message-row.mine { flex-direction: row-reverse; }
         .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; color: white; flex-shrink: 0; }
@@ -108,199 +123,164 @@
         .msg-author { font-weight: 500; font-size: 14px; }
         .msg-time { font-size: 12px; color: var(--text-secondary); }
         
-        /* 訊息內文編輯標示與操作按鈕 */
-        .msg-content-wrapper { display: flex; align-items: center; gap: 8px; }
+        /* Quote / Reply UI */
+        .quote-block { background: var(--quote-bg); border-left: 3px solid var(--primary-blue); padding: 6px 10px; border-radius: 4px; margin-bottom: 6px; font-size: 12px; color: var(--text-secondary); max-height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer; }
+        .message-row.mine .quote-block { background: var(--quote-mine-bg); border-left-color: var(--bg-color); color: var(--msg-mine-text); opacity: 0.9; }
+
+        /* Message Bubble & Reactions */
+        .msg-content-wrapper { display: flex; align-items: center; gap: 8px; position: relative; }
         .message-row.mine .msg-content-wrapper { flex-direction: row-reverse; }
-        .msg-actions { display: none; gap: 4px; }
+        .msg-bubble { font-size: 15px; line-height: 1.5; padding: 10px 14px; border-radius: 12px 12px 12px 2px; background: var(--msg-bg); color: var(--text-primary); word-break: break-word; white-space: pre-wrap; position: relative; }
+        .message-row.mine .msg-bubble { background: var(--msg-mine-bg); color: var(--msg-mine-text); border-radius: 12px 12px 2px 12px; }
+        .message-row.mine .msg-bubble a { color: inherit; text-decoration: underline; }
+        .edited-label { font-size: 11px; opacity: 0.7; margin-left: 4px; }
+
+        /* Read Receipts */
+        .read-receipt { font-size: 10px; color: var(--text-secondary); margin-top: 2px; text-align: right; }
+
+        /* Reaction Badges */
+        .reaction-badges { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+        .message-row.mine .reaction-badges { justify-content: flex-end; }
+        .reaction-badge { background: var(--hover-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 2px 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s; }
+        .reaction-badge.active { background: rgba(26,115,232,0.1); border-color: var(--primary-blue); }
+
+        /* Hover Actions (Reply, Edit, React, Delete) */
+        .msg-actions { display: none; gap: 2px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 2px; position: absolute; top: -15px; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .message-row:hover .msg-actions { display: flex; }
-        .edited-label { font-size: 11px; color: var(--text-secondary); margin-left: 4px; font-weight: normal; }
-        .message-row.mine .edited-label { color: rgba(255,255,255,0.7); }
+        .message-row.mine .msg-actions { left: 0; }
+        .message-row:not(.mine) .msg-actions { right: 0; }
+        .action-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 50%; font-size: 16px; display: flex; align-items: center; justify-content: center; }
+        .action-icon:hover { background: var(--hover-bg); color: var(--text-primary); }
 
-        .msg-bubble { font-size: 14px; line-height: 1.5; padding: 10px 14px; border-radius: 12px 12px 12px 2px; background: var(--hover-bg); color: var(--text-primary); word-break: break-word; }
-        .message-row.mine .msg-bubble { background: var(--primary-blue); color: white; border-radius: 12px 12px 2px 12px; }
-        .message-row.mine .msg-bubble a { color: #e8f0fe; text-decoration: underline; }
-
-        /* Media Previews */
+        /* Link Previews & Media */
+        .yt-preview { margin-top: 8px; border-radius: 8px; overflow: hidden; width: 100%; max-width: 400px; aspect-ratio: 16/9; background: #000; }
+        .yt-preview iframe { width: 100%; height: 100%; border: none; }
         .img-preview { margin-top: 8px; border-radius: 8px; overflow: hidden; max-width: 300px; border: 1px solid var(--border-color); cursor: pointer; }
         .img-preview img { display: block; width: 100%; height: auto; }
-        .file-card { display: flex; align-items: center; gap: 12px; margin-top: 8px; padding: 12px; background: white; border: 1px solid var(--border-color); border-radius: 8px; text-decoration: none; color: var(--text-primary); transition: background 0.2s; }
-        .file-card:hover { background: var(--hover-bg); }
-        .message-row.mine .file-card { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.1); color: white; }
-        .message-row.mine .file-card .material-icons-outlined, .message-row.mine .file-action { color: white; }
-        .file-info { display: flex; flex-direction: column; overflow: hidden; max-width: 200px; }
-        .file-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .file-action { font-size: 12px; color: var(--primary-blue); margin-top: 2px; }
 
-        /* Input Area */
-        .chat-input-area { padding: 0 24px 24px 24px; }
-        .upload-status { font-size: 12px; color: var(--primary-blue); margin-bottom: 8px; display: none; align-items: center; gap: 8px; }
-        .input-container { display: flex; align-items: center; background: white; border: 1px solid var(--border-color); border-radius: 24px; padding: 8px 16px; box-shadow: 0 1px 2px rgba(60,64,67,0.1); }
-        .input-container:focus-within { box-shadow: 0 1px 3px 1px rgba(60,64,67,0.15); border-color: transparent; }
-        .input-container input[type="text"] { flex: 1; border: none; outline: none; font-size: 15px; padding: 8px 0; font-family: var(--font-family); }
-        .action-buttons { display: flex; align-items: center; gap: 4px; }
-        .icon-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
-        .icon-btn:hover { background: var(--hover-bg); color: var(--text-primary); }
-        .icon-btn.send { color: var(--primary-blue); }
-        .icon-btn.send:hover { background: #e8f0fe; }
-        #file-upload-input { display: none; }
-
-        /* Toast System */
+        /* Input Area & Replying Banner */
+        .replying-banner { display: none; background: var(--hover-bg); padding: 8px 24px; border-top: 1px solid var(--border-color); align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
+        .chat-input-area { padding: 16px 24px 24px 24px; position: relative; }
+        .typing-indicator { position: absolute; top: -20px; left: 24px; font-size: 11px; color: var(--text-secondary); font-style: italic; display: none; }
+        
+        .input-container { display: flex; align-items: flex-end; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 16px; padding: 8px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .input-container:focus-within { border-color: var(--primary-blue); }
+        .input-container textarea { flex: 1; border: none; outline: none; font-size: 15px; padding: 8px 0; font-family: var(--font-family); background: transparent; color: var(--text-primary); resize: none; max-height: 120px; min-height: 24px; }
+        .action-buttons { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
+        
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
-        .toast { background: #323232; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateY(-20px); transition: 0.3s; }
+        .toast { background: #323232; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateY(-20px); transition: 0.3s; }
         .toast.show { opacity: 1; transform: translateY(0); }
         .toast.error { background: var(--google-red); }
-        .toast.success { background: #1e8e3e; }
-        .toast.info { background: var(--primary-blue); }
-
-        /* Modals */
-        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; }
-        .modal-content { background: white; padding: 24px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
-        .modal-title { font-size: 18px; font-weight: 500; margin-bottom: 16px; }
-        .modal-input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 14px; outline: none; margin-bottom: 16px; }
-        .modal-input:focus { border-color: var(--primary-blue); }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
-        .btn-text { background: none; border: none; padding: 8px 16px; color: var(--text-secondary); cursor: pointer; font-weight: 500; border-radius: 4px; }
-        .btn-text:hover { background: var(--hover-bg); }
-        .btn-primary { background: var(--primary-blue); border: none; padding: 8px 16px; color: white; cursor: pointer; font-weight: 500; border-radius: 4px; }
-        .btn-primary:hover { background: var(--primary-blue-hover); }
-
-        /* Image Fullscreen */
-        #image-modal { background: rgba(0,0,0,0.85); }
-        #image-modal img { max-width: 90%; max-height: 90%; border-radius: 4px; }
-        #image-modal-close { position: absolute; top: 20px; right: 20px; color: white; font-size: 32px; cursor: pointer; background: none; border: none; }
     </style>
 </head>
 <body>
-
-    <!-- Toast 提示容器 -->
     <div id="toast-container"></div>
 
     <!-- Modals -->
-    <div id="new-chat-modal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-title">發起私人對話</div>
-            <input type="email" id="new-chat-email" class="modal-input" placeholder="請輸入對方的 Email 地址...">
-            <div class="modal-actions">
-                <button class="btn-text" onclick="closeModal('new-chat-modal')">取消</button>
-                <button class="btn-primary" onclick="startPrivateChat()">開始聊天</button>
-            </div>
-        </div>
+    <div id="image-modal" class="screen" style="position:fixed; z-index:10000; background:rgba(0,0,0,0.85); align-items:center; justify-content:center;">
+        <button onclick="document.getElementById('image-modal').classList.remove('active')" style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:32px; cursor:pointer;" class="material-icons-outlined">close</button>
+        <img id="modal-img-target" src="" style="max-width:90%; max-height:90%; border-radius:4px;">
     </div>
 
-    <div id="image-modal" class="modal-overlay">
-        <button id="image-modal-close" class="material-icons-outlined">close</button>
-        <img id="modal-img-target" src="" alt="Full Screen">
-    </div>
-
-    <!-- 1. Loading Screen -->
-    <div id="loading-screen" class="screen active">
-        <div class="spinner"></div>
-        <div style="margin-top: 16px; color: var(--text-secondary);">正在載入 FlowChat...</div>
-    </div>
-
-    <!-- 2. Auth Screen -->
+    <!-- Auth & Setup Screens -->
+    <div id="loading-screen" class="screen active"><div class="spinner"></div><div style="margin-top:16px; color:var(--text-secondary);">載入 FlowChat 中...</div></div>
+    
     <div id="auth-screen" class="screen">
         <div class="login-card">
-            <h1>FlowChat</h1>
-            <p>與團隊保持緊密連結的溝通橋樑</p>
+            <h1>FlowChat</h1><p>企業級端對端加密通訊平台</p>
             <button class="google-btn" id="btn-google-login">
-                <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                使用 Google 帳號登入
+                <svg viewBox="0 0 48 48" width="18"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                Google 登入
             </button>
         </div>
     </div>
 
-    <!-- 3. Profile Setup -->
     <div id="profile-screen" class="screen">
         <div class="login-card">
-            <h1>設定個人檔案</h1>
-            <p>為了能夠使用一對一私訊，請設定您的基本資料</p>
+            <h2>設定個人檔案</h2><br>
             <div class="setup-form">
-                <input type="text" id="setup-name" placeholder="您的顯示暱稱 (例如: 王大明)" required>
-                <input type="email" id="setup-email" placeholder="您的電子郵件 (作為私訊ID)" required>
+                <input type="text" id="setup-name" placeholder="您的顯示暱稱">
+                <input type="email" id="setup-email" placeholder="電子郵件 (作為私訊ID)">
                 <button class="submit-btn" id="btn-save-profile">進入聊天室</button>
             </div>
         </div>
     </div>
 
-    <!-- 4. Main App -->
+    <!-- Main App -->
     <div id="main-app" class="screen">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
                 <div class="logo"><span class="material-icons-outlined">forum</span> FlowChat</div>
-                <button class="logout-btn" id="btn-logout" title="登出"><span class="material-icons-outlined">logout</span></button>
+                <div class="header-actions">
+                    <button class="icon-btn-simple" id="btn-theme-toggle" title="切換深色模式"><span class="material-icons-outlined">dark_mode</span></button>
+                    <button class="icon-btn-simple" id="btn-logout" title="登出"><span class="material-icons-outlined">logout</span></button>
+                </div>
             </div>
-            
             <div class="current-user">
                 <div class="user-avatar-small" id="my-avatar">?</div>
                 <div class="user-info">
-                    <span class="user-name" id="my-name">載入中...</span>
+                    <span class="user-name" id="my-name">...</span>
                     <span class="user-email" id="my-email">...</span>
                 </div>
             </div>
-
             <div class="nav-section">
                 <div class="section-title">公開頻道</div>
                 <div class="room-item active" id="room-lobby" onclick="switchRoom('lobby', '大廳公用頻道')">
                     <span class="material-icons-outlined room-item-icon">tag</span>
-                    <div class="room-item-content">
-                        <span class="room-item-name">大廳公用頻道</span>
-                    </div>
+                    <div class="room-item-content"><span class="room-item-name">大廳公用頻道</span></div>
+                    <span id="badge-lobby" class="unread-badge" style="display:none;">0</span>
                 </div>
-
                 <div class="section-title" style="margin-top: 24px;">
-                    私人對話 (Direct Messages)
-                    <button class="add-btn" onclick="openModal('new-chat-modal')" title="新增對話"><span class="material-icons-outlined">add</span></button>
+                    私人對話 
+                    <button class="icon-btn-simple" onclick="const e=prompt('輸入對方 Email：'); if(e) startPrivateChat(e);" title="新增"><span class="material-icons-outlined" style="font-size:16px;">add</span></button>
                 </div>
-                
-                <!-- 動態載入的私訊與要求列表 -->
                 <div id="dm-list"></div>
             </div>
         </div>
 
-        <!-- Chat Area -->
         <div class="main-chat">
             <div class="chat-header">
-                <span class="material-icons-outlined" id="chat-header-icon">tag</span>
-                <span id="chat-header-title">大廳公用頻道</span>
-                <span class="room-desc" id="chat-header-desc">與所有人公開交流</span>
+                <div class="chat-header-info">
+                    <span class="material-icons-outlined" id="chat-header-icon">tag</span>
+                    <span id="chat-header-title">大廳公用頻道</span>
+                </div>
+                <div class="search-box">
+                    <span class="material-icons-outlined" style="font-size:16px; color:var(--text-secondary);">search</span>
+                    <input type="text" id="search-input" placeholder="在對話中搜尋...">
+                </div>
             </div>
 
             <div class="chat-history" id="chat-history">
-                <!-- 訊息注入區 -->
+                <div class="load-more-btn" id="load-more-btn" onclick="loadOlderMessages()">載入更早的訊息...</div>
+                <div id="messages-container"></div>
+            </div>
+
+            <div class="replying-banner" id="reply-banner">
+                <span>回覆給 <strong id="reply-to-name"></strong>：<span id="reply-to-text" style="opacity:0.8;"></span></span>
+                <button class="icon-btn-simple" onclick="cancelReply()"><span class="material-icons-outlined" style="font-size:16px;">close</span></button>
             </div>
 
             <div class="chat-input-area">
-                <div class="upload-status" id="upload-status">
-                    <div class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></div>
-                    <span>檔案處理中...</span>
-                </div>
+                <div class="typing-indicator" id="typing-indicator">有人正在輸入...</div>
                 <div class="input-container">
-                    <input type="text" id="chat-input" placeholder="傳送訊息至大廳..." autocomplete="off">
+                    <textarea id="chat-input" placeholder="傳送訊息... (Shift+Enter 換行，支援拖曳圖片貼上)"></textarea>
                     <div class="action-buttons">
-                        <button class="icon-btn" title="附加檔案" onclick="document.getElementById('file-upload-input').click()">
-                            <span class="material-icons-outlined">attach_file</span>
-                        </button>
-                        <input type="file" id="file-upload-input" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.txt">
-                        <button class="icon-btn send" id="send-btn" title="傳送">
-                            <span class="material-icons-outlined">send</span>
-                        </button>
+                        <button class="icon-btn-simple" onclick="document.getElementById('file-upload-input').click()"><span class="material-icons-outlined">attach_file</span></button>
+                        <input type="file" id="file-upload-input" accept="image/*,.pdf,.doc,.docx,.xls,.zip" style="display:none;">
+                        <button class="icon-btn-simple" id="send-btn" style="color:var(--primary-blue);"><span class="material-icons-outlined">send</span></button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase & Application Logic -->
+    <!-- Firebase Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, limit, setDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // ==========================================
-        // 配置與初始化 (🚨 Firebase 金鑰 🚨)
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDRSP3-v0Qv7len-njTQFGJhb8c4eNDRpk",
             authDomain: "flowchat-web.firebaseapp.com",
@@ -314,521 +294,339 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // 全域狀態
-        let currentUser = null;
-        let myProfile = { name: '', email: '' };
-        let currentRoomId = 'lobby'; 
-        let currentRoomName = '大廳公用頻道';
-        let allMessages = []; 
-        let unsubscribeSnapshot = null;
-        
-        // 對話管理狀態
-        let sessionDMs = new Set(); // 記錄當前網頁階段主動發起的對話
-        let dmProfiles = {};        // 紀錄 Email 對應的名稱 { 'a@b.com': '王小明' }
-        let dmStats = {};           // 紀錄每個私訊頻道的狀態 { 'a@b.com': { iReplied: true, latestMsgId: 'xxx', lastTime: 123 } }
+        // 10. 離線快取支援 (Offline Persistence)
+        enableIndexedDbPersistence(db).catch(err => console.warn("Offline DB unavailable, falling back to online only.", err));
 
-        // DOM 元素
-        const screens = {
-            loading: document.getElementById('loading-screen'),
-            auth: document.getElementById('auth-screen'),
-            profile: document.getElementById('profile-screen'),
-            main: document.getElementById('main-app')
+        // State
+        let currentUser = null, myProfile = { name: '', email: '' };
+        let currentRoomId = 'lobby', currentRoomName = '大廳公用頻道';
+        let allMessages = [], msgLimit = 50; 
+        let unsubscribeSnapshot = null, unsubscribeTyping = null, typingTimeout = null;
+        let replyingToId = null, replyingToText = null;
+        let isWindowFocused = true;
+        let roomLastRead = JSON.parse(localStorage.getItem('flowchat_reads')) || {};
+
+        // 5. 深色模式切換 (Dark Mode Toggle)
+        if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
+        document.getElementById('btn-theme-toggle').onclick = () => {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
         };
-        
-        function switchScreen(screenName) {
-            Object.values(screens).forEach(s => s.classList.remove('active'));
-            screens[screenName].classList.add('active');
-        }
 
-        // ==========================================
-        // UI & 輔助工具函式
-        // ==========================================
-        function escapeHtml(text) {
-            return (text || "").toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
+        // Window Focus tracking for Notifications & Read Receipts
+        window.onfocus = () => { isWindowFocused = true; document.title = "FlowChat - 企業級通訊"; updateReadReceipt(); };
+        window.onblur = () => { isWindowFocused = false; };
 
-        window.showToast = function(msg, type = 'info') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            let icon = type === 'error' ? 'error' : (type === 'success' ? 'check_circle' : 'info');
-            toast.innerHTML = `<span class="material-icons-outlined">${icon}</span> ${escapeHtml(msg)}`;
-            container.appendChild(toast);
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
-        }
+        // Utils
+        const escapeHtml = t => (t||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+        window.showToast = (msg, type='info') => {
+            const c = document.getElementById('toast-container'), t = document.createElement('div');
+            t.className = `toast ${type}`; t.innerHTML = msg; c.appendChild(t);
+            setTimeout(() => t.classList.add('show'), 10);
+            setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(), 300); }, 3000);
+        };
+        const getDmRoomId = (e1, e2) => 'dm_' + [e1.toLowerCase(), e2.toLowerCase()].sort().join('|');
+        const playSound = () => { try { const c = new (window.AudioContext || window.webkitAudioContext)(); const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(587.33, c.currentTime); o.frequency.setValueAtTime(880, c.currentTime+0.1); g.gain.setValueAtTime(0.1, c.currentTime); g.gain.exponentialRampToValueAtTime(0.01, c.currentTime+0.4); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+0.4); } catch(e){} };
 
-        function getAvatarColor(name) {
-            const colors = ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#8e24aa', '#00acc1', '#f06292'];
-            let hash = 0;
-            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-            return colors[Math.abs(hash) % colors.length];
-        }
-
-        function getDmRoomId(email1, email2) {
-            return 'dm_' + [email1.toLowerCase(), email2.toLowerCase()].sort().join('|');
-        }
-
-        window.openModal = (id) => document.getElementById(id).style.display = 'flex';
-        window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-        
-        window.openImageModal = (url) => {
-            document.getElementById('modal-img-target').src = url;
-            window.openModal('image-modal');
-        }
-        document.getElementById('image-modal-close').addEventListener('click', () => window.closeModal('image-modal'));
-
-        // ==========================================
-        // 認證邏輯 (Firebase Auth)
-        // ==========================================
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                if (user.email) {
-                    myProfile.email = user.email.toLowerCase();
-                    myProfile.name = user.displayName || user.email.split('@')[0];
-                    startApp();
-                } else {
-                    switchScreen('profile');
-                }
-            } else {
-                switchScreen('auth');
-            }
+        // Auth
+        onAuthStateChanged(auth, user => {
+            if (user && user.email) { currentUser = user; myProfile.email = user.email.toLowerCase(); myProfile.name = user.displayName || user.email.split('@')[0]; startApp(); }
+            else { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(user ? 'profile-screen' : 'auth-screen').classList.add('active'); }
         });
+        document.getElementById('btn-google-login').onclick = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e => showToast("登入失敗", "error"));
+        document.getElementById('btn-logout').onclick = () => signOut(auth);
 
-        document.getElementById('btn-google-login').addEventListener('click', async () => {
-            try {
-                const provider = new GoogleAuthProvider();
-                await signInWithPopup(auth, provider);
-            } catch (error) {
-                showToast("登入失敗: " + error.message, "error");
-            }
-        });
-
-        document.getElementById('btn-save-profile').addEventListener('click', () => {
-            const name = document.getElementById('setup-name').value.trim();
-            const email = document.getElementById('setup-email').value.trim();
-            if(!name || !email || !email.includes('@')) {
-                showToast("請填寫正確的名稱與 Email", "error"); return;
-            }
-            myProfile.name = name;
-            myProfile.email = email.toLowerCase();
-            startApp();
-        });
-
-        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-
-        // ==========================================
-        // 核心應用邏輯 (Firestore & 對話管理)
-        // ==========================================
         function startApp() {
             document.getElementById('my-name').textContent = myProfile.name;
             document.getElementById('my-email').textContent = myProfile.email;
-            document.getElementById('my-avatar').textContent = myProfile.name.charAt(0).toUpperCase();
-            document.getElementById('my-avatar').style.background = getAvatarColor(myProfile.name);
-            
-            switchScreen('main');
-            loadMessages();
+            document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+            document.getElementById('main-app').classList.add('active');
+            fetchMessages(); setupTypingListener();
         }
 
-        function loadMessages() {
-            if (!currentUser) return;
-            const msgsRef = collection(db, 'messages');
-            
+        // 3. 歷史訊息分頁加載 (Pagination)
+        function fetchMessages() {
             if (unsubscribeSnapshot) unsubscribeSnapshot();
+            const q = query(collection(db, 'messages'), orderBy('timestamp', 'desc'), limit(msgLimit));
             
-            unsubscribeSnapshot = onSnapshot(msgsRef, (snapshot) => {
-                let tempMessages = [];
-                snapshot.forEach(doc => tempMessages.push({ id: doc.id, ...doc.data() }));
-                tempMessages.sort((a, b) => a.timestamp - b.timestamp);
-                allMessages = tempMessages;
-                
-                analyzeDMStates();
-                renderMessages();
-            }, (error) => {
-                showToast("讀取對話失敗", "error");
-                console.error(error);
-            });
-        }
+            unsubscribeSnapshot = onSnapshot(q, snapshot => {
+                let temp = [];
+                snapshot.forEach(doc => temp.push({ id: doc.id, ...doc.data() }));
+                temp.reverse(); // Ensure chronological order
 
-        // 分析所有對話歷史，建立使用者檔案庫與互動狀態 (判斷是否為「新要求」)
-        function analyzeDMStates() {
-            dmProfiles = {};
-            dmStats = {};
-
-            allMessages.forEach(msg => {
-                if (msg.chatId.startsWith('dm_') && msg.chatId.includes(myProfile.email)) {
-                    const emails = msg.chatId.replace('dm_', '').split('|');
-                    const otherEmail = emails[0] === myProfile.email ? emails[1] : emails[0];
-                    const isMine = msg.senderEmail === myProfile.email;
-
-                    // 儲存對方的顯示名稱
-                    if (!dmProfiles[otherEmail]) {
-                        dmProfiles[otherEmail] = isMine ? otherEmail.split('@')[0] : (msg.senderName || otherEmail.split('@')[0]);
-                    } else if (!isMine && msg.senderName) {
-                        dmProfiles[otherEmail] = msg.senderName; // 更新為最新名稱
-                    }
-
-                    // 初始化狀態
-                    if (!dmStats[otherEmail]) {
-                        dmStats[otherEmail] = { iReplied: false, latestMsgId: msg.id, lastTime: msg.timestamp };
-                    }
-
-                    // 記錄互動足跡
-                    if (isMine) dmStats[otherEmail].iReplied = true;
-                    if (msg.timestamp >= dmStats[otherEmail].lastTime) {
-                        dmStats[otherEmail].latestMsgId = msg.id;
-                        dmStats[otherEmail].lastTime = msg.timestamp;
+                // 2. 音效通知
+                if (allMessages.length > 0 && temp.length > 0) {
+                    const latest = temp[temp.length - 1];
+                    const oldLatest = allMessages[allMessages.length - 1];
+                    if (latest.id !== oldLatest?.id && latest.senderEmail !== myProfile.email) {
+                        if (!isWindowFocused) { playSound(); document.title = "🔔 新訊息 - FlowChat"; }
                     }
                 }
+
+                allMessages = temp;
+                renderSidebarContacts(); 
+                renderMessages(true); // true = maintain scroll position if possible
+                updateReadReceipt();
             });
-            renderSidebarContacts();
         }
 
-        // 側邊欄：接受、拒絕、隱藏 操作函式
-        window.acceptDM = function(email, event) {
-            event.stopPropagation();
-            sessionDMs.add(email); // 強制加入到目前的會話活躍清單
-            renderSidebarContacts();
-            switchRoom(getDmRoomId(myProfile.email, email), dmProfiles[email] || email);
-        };
+        window.loadOlderMessages = () => { msgLimit += 50; fetchMessages(); };
 
-        window.hideDM = function(email, latestMsgId, event) {
-            event.stopPropagation();
-            if(!confirm(`確定要隱藏與 ${dmProfiles[email] || email} 的對話嗎？\n(除非對方再次傳送新訊息，否則不會出現)`)) return;
-            
-            // 寫入 localStorage 隱藏名單，記錄隱藏時的「最後一則訊息ID」
-            localStorage.setItem(`ignored_dm_${myProfile.email}_${email}`, latestMsgId || 'manual');
-            
-            // 如果剛好在該房間，則退回大廳
-            if (currentRoomId === getDmRoomId(myProfile.email, email)) {
-                switchRoom('lobby', '大廳公用頻道');
-            }
-            renderSidebarContacts();
-        };
-
-        // 渲染左側邊欄的聯絡人與要求清單
+        // 1. 未讀訊息紅點與計數 (Unread Badges) & Sidebar
         function renderSidebarContacts() {
-            const listEl = document.getElementById('dm-list');
-            let activeHtml = '';
-            let requestHtml = '';
-            let requestCount = 0;
-
-            // 聯集：主動發起的對話 + 有歷史紀錄的對話
-            let allDMEmails = new Set([...sessionDMs, ...Object.keys(dmStats)]);
-
-            allDMEmails.forEach(email => {
-                const stats = dmStats[email] || { iReplied: false, latestMsgId: 'manual', lastTime: 0 };
-                const ignoredId = localStorage.getItem(`ignored_dm_${myProfile.email}_${email}`);
-
-                // 如果被隱藏/拒絕，而且「沒有新訊息進來打破狀態」，則完全不渲染
-                if (ignoredId && ignoredId === stats.latestMsgId) {
-                    return; 
-                }
-
-                const name = dmProfiles[email] || email.split('@')[0];
-                const isActiveRoom = currentRoomId === getDmRoomId(myProfile.email, email);
-
-                // 判斷是否為「新對話要求」：我從沒回覆過，且不是我在本次網頁主動新增的
-                const isRequest = !stats.iReplied && !sessionDMs.has(email);
-
-                if (isRequest) {
-                    requestCount++;
-                    requestHtml += `
-                        <div class="room-item ${isActiveRoom ? 'active' : ''}" onclick="switchRoom('${getDmRoomId(myProfile.email, email)}', '${escapeHtml(name)}')">
-                            <span class="material-icons-outlined room-item-icon" style="color:#ea4335;">mark_email_unread</span>
-                            <div class="room-item-content">
-                                <span class="room-item-name">${escapeHtml(name)}</span>
-                                <span class="room-item-email">${escapeHtml(email)}</span>
-                            </div>
-                            <div class="room-item-actions always-show">
-                                <span class="material-icons-outlined icon-action accept" title="接受" onclick="acceptDM('${escapeHtml(email)}', event)">check</span>
-                                <span class="material-icons-outlined icon-action decline" title="拒絕 / 隱藏" onclick="hideDM('${escapeHtml(email)}', '${stats.latestMsgId}', event)">close</span>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    activeHtml += `
-                        <div class="room-item ${isActiveRoom ? 'active' : ''}" onclick="switchRoom('${getDmRoomId(myProfile.email, email)}', '${escapeHtml(name)}')">
-                            <span class="material-icons-outlined room-item-icon">person</span>
-                            <div class="room-item-content">
-                                <span class="room-item-name">${escapeHtml(name)}</span>
-                                <span class="room-item-email">${escapeHtml(email)}</span>
-                            </div>
-                            <div class="room-item-actions">
-                                <span class="material-icons-outlined icon-action" title="刪除對話 (隱藏)" onclick="hideDM('${escapeHtml(email)}', '${stats.latestMsgId}', event)">more_vert</span>
-                            </div>
-                        </div>
-                    `;
+            let dmSet = new Set(), dmProfiles = {};
+            allMessages.forEach(m => {
+                if(m.chatId.startsWith('dm_') && m.chatId.includes(myProfile.email)) {
+                    const other = m.chatId.replace('dm_','').split('|').find(e => e !== myProfile.email);
+                    if(other) { dmSet.add(other); if(m.senderEmail !== myProfile.email) dmProfiles[other] = m.senderName; }
                 }
             });
 
-            let finalHtml = '';
-            if (requestCount > 0) {
-                finalHtml += `
-                    <div class="section-title" style="color:#ea4335; margin-top:16px;">
-                        新對話要求 (${requestCount})
-                    </div>
-                    ${requestHtml}
-                    <div class="section-title" style="margin-top:16px;">目前的對話</div>
-                `;
-            }
-            finalHtml += activeHtml;
-
-            listEl.innerHTML = finalHtml;
-        }
-
-        // 切換房間
-        window.switchRoom = function(roomId, roomName) {
-            currentRoomId = roomId;
-            currentRoomName = roomName;
-            
-            document.getElementById('chat-header-title').textContent = roomName;
-            const isLobby = roomId === 'lobby';
-            document.getElementById('chat-header-icon').textContent = isLobby ? 'tag' : 'person';
-            document.getElementById('chat-header-desc').textContent = isLobby ? '與所有人公開交流' : '端對端加密私人對話';
-            document.getElementById('chat-input').placeholder = isLobby ? '傳送訊息至大廳...' : `傳送訊息給 ${roomName}...`;
-            
-            document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active'));
-            if(isLobby) document.getElementById('room-lobby').classList.add('active');
-            
-            renderSidebarContacts(); 
-            renderMessages();
-        }
-
-        // 透過 Modal 發起新的私訊
-        window.startPrivateChat = function() {
-            const emailInput = document.getElementById('new-chat-email').value.trim().toLowerCase();
-            if(!emailInput || !emailInput.includes('@')) {
-                showToast("請輸入有效的 Email", "error"); return;
-            }
-            if(emailInput === myProfile.email) {
-                showToast("無法與自己對話", "error"); return;
-            }
-            
-            closeModal('new-chat-modal');
-            const newRoomId = getDmRoomId(myProfile.email, emailInput);
-            
-            // 強制解除可能存在的隱藏狀態，並將其加入活躍會話中
-            localStorage.removeItem(`ignored_dm_${myProfile.email}_${emailInput}`);
-            sessionDMs.add(emailInput);
-            
-            // 如果還不知道對方的名字，先用 Email 前綴代替
-            const displayName = dmProfiles[emailInput] || emailInput.split('@')[0];
-            switchRoom(newRoomId, displayName);
-        }
-
-        // ==========================================
-        // 訊息操作 (編輯與收回)
-        // ==========================================
-        window.deleteMessage = async function(messageId) {
-            if (!confirm("確定要收回這條訊息嗎？")) return;
-            try {
-                const msgRef = doc(db, 'messages', messageId);
-                await deleteDoc(msgRef);
-                showToast("訊息已收回", "success");
-            } catch (error) {
-                console.error("收回失敗", error);
-                showToast("收回失敗，權限不足或網路異常", "error");
-            }
-        }
-
-        window.editMessage = async function(messageId, oldMessageText) {
-            const newMessageText = prompt("請修改您的訊息：", oldMessageText);
-            if (newMessageText === null || newMessageText.trim() === "" || newMessageText === oldMessageText) return;
-
-            try {
-                const msgRef = doc(db, 'messages', messageId);
-                await updateDoc(msgRef, {
-                    message: newMessageText.trim(),
-                    isEdited: true 
-                });
-                showToast("訊息已更新", "success");
-            } catch (error) {
-                console.error("編輯失敗", error);
-                showToast("編輯失敗，權限不足或網路異常", "error");
-            }
-        }
-
-        // 在前端執行記憶體過濾渲染，並支援編輯與收回按鈕
-        function renderMessages() {
-            const chatHistoryEl = document.getElementById('chat-history');
-            const isAtBottom = chatHistoryEl.scrollHeight - chatHistoryEl.clientHeight - chatHistoryEl.scrollTop < 100;
-            
-            const roomMessages = allMessages.filter(msg => msg.chatId === currentRoomId);
-            
-            if (roomMessages.length === 0) {
-                chatHistoryEl.innerHTML = `<div style="text-align:center; color:var(--text-secondary); margin-top:50px;">這裡是與 ${escapeHtml(currentRoomName)} 的對話起點</div>`;
-                return;
-            }
+            // Lobby Badge
+            const lobbyMsgs = allMessages.filter(m => m.chatId === 'lobby');
+            updateBadge('lobby', lobbyMsgs);
 
             let html = '';
-            roomMessages.forEach(msg => {
+            dmSet.forEach(email => {
+                if (localStorage.getItem(`hidden_${email}`)) return;
+                const msgs = allMessages.filter(m => m.chatId === getDmRoomId(myProfile.email, email));
+                const unread = msgs.filter(m => m.senderEmail !== myProfile.email && m.timestamp > (roomLastRead[msgs[0].chatId] || 0)).length;
+                const name = dmProfiles[email] || email.split('@')[0];
+                const active = currentRoomId === getDmRoomId(myProfile.email, email) ? 'active' : '';
+                
+                html += `
+                    <div class="room-item ${active}" onclick="switchRoom('${getDmRoomId(myProfile.email, email)}', '${escapeHtml(name)}')">
+                        <span class="material-icons-outlined room-item-icon">person</span>
+                        <div class="room-item-content">
+                            <span class="room-item-name">${escapeHtml(name)}</span>
+                            <span class="room-item-email">${escapeHtml(email)}</span>
+                        </div>
+                        ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+                        <div class="room-item-actions">
+                            <button class="icon-btn-simple" onclick="hideDM('${email}', event)" title="隱藏對話"><span class="material-icons-outlined" style="font-size:16px;">delete</span></button>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('dm-list').innerHTML = html;
+        }
+
+        function updateBadge(roomId, msgs) {
+            const unread = msgs.filter(m => m.senderEmail !== myProfile.email && m.timestamp > (roomLastRead[roomId] || 0)).length;
+            const b = document.getElementById(`badge-${roomId}`);
+            if(b) { b.textContent = unread; b.style.display = unread > 0 ? 'inline-block' : 'none'; }
+        }
+
+        window.hideDM = (email, e) => { e.stopPropagation(); localStorage.setItem(`hidden_${email}`, "true"); if(currentRoomId === getDmRoomId(myProfile.email, email)) switchRoom('lobby', '大廳公用頻道'); renderSidebarContacts(); };
+        window.startPrivateChat = email => { email = email.toLowerCase(); if(email===myProfile.email) return; localStorage.removeItem(`hidden_${email}`); switchRoom(getDmRoomId(myProfile.email, email), email.split('@')[0]); };
+
+        window.switchRoom = (id, name) => {
+            currentRoomId = id; currentRoomName = name;
+            document.getElementById('chat-header-title').textContent = name;
+            document.querySelectorAll('.room-item').forEach(el=>el.classList.remove('active'));
+            if(id==='lobby') document.getElementById('room-lobby').classList.add('active');
+            msgLimit = 50; fetchMessages();
+            updateReadReceipt();
+            setupTypingListener();
+        };
+
+        // 2. 訊息已讀狀態 (Read Receipts)
+        let readTimeout;
+        function updateReadReceipt() {
+            if(!isWindowFocused) return;
+            clearTimeout(readTimeout);
+            readTimeout = setTimeout(() => {
+                roomLastRead[currentRoomId] = Date.now();
+                localStorage.setItem('flowchat_reads', JSON.stringify(roomLastRead));
+                // Update global presence for double-check marks (Debounced write)
+                setDoc(doc(db, 'readReceipts', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true });
+                renderSidebarContacts();
+            }, 1000);
+        }
+
+        // 4. 正在輸入狀態 (Typing Indicator)
+        function setupTypingListener() {
+            if(unsubscribeTyping) unsubscribeTyping();
+            unsubscribeTyping = onSnapshot(doc(db, 'typing', currentRoomId), docSnap => {
+                const data = docSnap.data() || {};
+                const typers = Object.keys(data).filter(email => email !== myProfile.email && (Date.now() - data[email] < 3000));
+                const ind = document.getElementById('typing-indicator');
+                if(typers.length > 0) { ind.textContent = `${typers.map(e=>e.split('@')[0]).join(', ')} 正在輸入...`; ind.style.display = 'block'; }
+                else ind.style.display = 'none';
+            });
+        }
+        
+        document.getElementById('chat-input').addEventListener('input', () => {
+            if(!typingTimeout) {
+                setDoc(doc(db, 'typing', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true });
+                typingTimeout = setTimeout(()=> { typingTimeout = null; }, 2000);
+            }
+        });
+
+        // 8. 訊息搜尋 (Frontend Message Search)
+        document.getElementById('search-input').addEventListener('input', e => {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('.message-row').forEach(row => {
+                const text = row.querySelector('.msg-bubble')?.textContent.toLowerCase() || '';
+                row.style.display = text.includes(term) ? 'flex' : 'none';
+            });
+        });
+
+        // 6. 特定訊息回覆 (Quote Reply)
+        window.initReply = (id, text) => {
+            replyingToId = id; replyingToText = text;
+            document.getElementById('reply-to-name').textContent = "訊息";
+            document.getElementById('reply-to-text').textContent = text;
+            document.getElementById('reply-banner').style.display = 'flex';
+            document.getElementById('chat-input').focus();
+        };
+        window.cancelReply = () => { replyingToId = null; document.getElementById('reply-banner').style.display = 'none'; };
+
+        // 7. 表情符號回應 (Reactions)
+        window.toggleReaction = async (msgId, emoji) => {
+            const msg = allMessages.find(m => m.id === msgId);
+            if(!msg) return;
+            const reacts = msg.reactions || {};
+            const users = reacts[emoji] || [];
+            let newUsers = users.includes(myProfile.email) ? users.filter(u => u !== myProfile.email) : [...users, myProfile.email];
+            await updateDoc(doc(db, 'messages', msgId), { [`reactions.${emoji}`]: newUsers });
+        };
+
+        // Render Engine
+        let globalReadStates = {};
+        onSnapshot(collection(db, 'readReceipts'), snap => { snap.forEach(d => globalReadStates[d.id] = d.data()); renderMessages(); });
+
+        function renderMessages(preserveScroll = false) {
+            const container = document.getElementById('messages-container');
+            const history = document.getElementById('chat-history');
+            const oldScroll = history.scrollHeight;
+            const isAtBottom = history.scrollHeight - history.clientHeight - history.scrollTop < 50;
+            
+            document.getElementById('load-more-btn').style.display = allMessages.length >= msgLimit ? 'block' : 'none';
+            
+            const roomMsgs = allMessages.filter(m => m.chatId === currentRoomId);
+            let html = '';
+
+            roomMsgs.forEach(msg => {
                 const isMine = msg.senderEmail === myProfile.email;
                 const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                const initial = (msg.senderName || msg.senderEmail).charAt(0).toUpperCase();
+                const initial = msg.senderName.charAt(0).toUpperCase();
                 const avatarBg = getAvatarColor(msg.senderEmail);
+                const edited = msg.isEdited ? `<span class="edited-label">(已編輯)</span>` : '';
                 
-                const editedHtml = msg.isEdited ? `<span class="edited-label">(已編輯)</span>` : '';
+                // Read Receipt logic
+                let readText = '';
+                if(isMine && currentRoomId.startsWith('dm_')) {
+                    const other = currentRoomId.replace('dm_','').split('|').find(e => e !== myProfile.email);
+                    if(globalReadStates[currentRoomId] && globalReadStates[currentRoomId][other] >= msg.timestamp) readText = `<div class="read-receipt">✓ 已讀</div>`;
+                }
 
+                // Quote HTML
+                let quoteHtml = '';
+                if(msg.replyTo) quoteHtml = `<div class="quote-block">${escapeHtml(msg.replyToText)}</div>`;
+
+                // Content & 10. Link Previews (YouTube Regex)
                 let contentHtml = '';
-                if (msg.type === 'image') {
-                    contentHtml = `<div class="img-preview" onclick="openImageModal('${escapeHtml(msg.fileUrl)}')"><img src="${escapeHtml(msg.fileUrl)}" alt="Image"></div>`;
-                } else if (msg.type === 'file') {
-                    contentHtml = `
-                        <a href="${escapeHtml(msg.fileUrl)}" download="${escapeHtml(msg.fileName)}" target="_blank" class="file-card">
-                            <span class="material-icons-outlined">insert_drive_file</span>
-                            <div class="file-info"><span class="file-name">${escapeHtml(msg.fileName)}</span><span class="file-action">點擊下載</span></div>
-                        </a>`;
-                } else {
-                    let text = escapeHtml(msg.message).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
-                    contentHtml = `<div class="msg-bubble">${text}${editedHtml}</div>`;
+                if (msg.type === 'image') contentHtml = `<div class="img-preview" onclick="openImageModal('${escapeHtml(msg.fileUrl)}')"><img src="${escapeHtml(msg.fileUrl)}"></div>`;
+                else if (msg.type === 'file') contentHtml = `<a href="${escapeHtml(msg.fileUrl)}" download="${escapeHtml(msg.fileName)}" class="file-card"><span class="material-icons-outlined">insert_drive_file</span><div class="file-info"><span class="file-name">${escapeHtml(msg.fileName)}</span></div></a>`;
+                else {
+                    let text = escapeHtml(msg.message);
+                    const ytMatch = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+                    if(ytMatch) contentHtml = `${quoteHtml}<div class="msg-bubble">${text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')}</div><div class="yt-preview"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe></div>`;
+                    else contentHtml = `${quoteHtml}<div class="msg-bubble">${text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')}${edited}</div>`;
                 }
 
-                let actionButtonsHtml = '';
-                if (isMine) {
-                    actionButtonsHtml = `<div class="msg-actions">`;
-                    if (msg.type === 'text') {
-                        const safeMsg = escapeHtml(msg.message).replace(/'/g, "\\'");
-                        actionButtonsHtml += `<button class="action-icon" title="編輯" onclick="editMessage('${msg.id}', '${safeMsg}')"><span class="material-icons-outlined" style="font-size:16px;">edit</span></button>`;
+                // Reactions HTML
+                let reactHtml = '<div class="reaction-badges">';
+                const reacts = msg.reactions || {};
+                Object.keys(reacts).forEach(emoji => {
+                    if(reacts[emoji].length > 0) {
+                        const active = reacts[emoji].includes(myProfile.email) ? 'active' : '';
+                        reactHtml += `<div class="reaction-badge ${active}" onclick="toggleReaction('${msg.id}','${emoji}')">${emoji} ${reacts[emoji].length}</div>`;
                     }
-                    actionButtonsHtml += `<button class="action-icon" title="收回" onclick="deleteMessage('${msg.id}')"><span class="material-icons-outlined" style="font-size:16px;">delete</span></button></div>`;
+                });
+                reactHtml += '</div>';
+
+                // Actions Hover Menu
+                const safeText = msg.type === 'text' ? escapeHtml(msg.message).replace(/'/g, "\\'") : '附件';
+                let acts = `<div class="msg-actions">
+                    <button class="action-icon" title="回覆" onclick="initReply('${msg.id}','${safeText}')"><span class="material-icons-outlined">reply</span></button>
+                    <button class="action-icon" title="讚" onclick="toggleReaction('${msg.id}','👍')">👍</button>
+                    <button class="action-icon" title="愛心" onclick="toggleReaction('${msg.id}','❤️')">❤️</button>`;
+                if(isMine) {
+                    if(msg.type === 'text') acts += `<button class="action-icon" title="編輯" onclick="editMessage('${msg.id}','${safeText}')"><span class="material-icons-outlined">edit</span></button>`;
+                    acts += `<button class="action-icon" title="收回" onclick="deleteDoc(doc(db,'messages','${msg.id}'))"><span class="material-icons-outlined">delete</span></button>`;
                 }
+                acts += `</div>`;
 
                 html += `
                     <div class="message-row ${isMine ? 'mine' : ''}">
                         <div class="avatar" style="background-color: ${avatarBg}">${initial}</div>
                         <div class="msg-content">
-                            <div class="msg-header">
-                                <span class="msg-author">${escapeHtml(msg.senderName)}</span>
-                                <span class="msg-time">${timeStr}</span>
-                            </div>
-                            <div class="msg-content-wrapper">
-                                ${contentHtml}
-                                ${actionButtonsHtml}
-                            </div>
+                            <div class="msg-header"><span class="msg-author">${escapeHtml(msg.senderName)}</span><span class="msg-time">${timeStr}</span></div>
+                            <div class="msg-content-wrapper">${contentHtml}${acts}</div>
+                            ${reactHtml}${readText}
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
 
-            chatHistoryEl.innerHTML = html;
+            container.innerHTML = html;
             
-            if (isAtBottom) {
-                chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+            // Debug 1: Pagination Scroll Fix
+            if(preserveScroll && !isAtBottom && oldScroll > 0) {
+                history.scrollTop += (history.scrollHeight - oldScroll);
+            } else if (isAtBottom || !preserveScroll) {
+                history.scrollTop = history.scrollHeight;
             }
         }
 
-        // 發送訊息 (寫入 Firestore)
-        async function sendPayload(type, content, fileUrl = '', fileName = '') {
+        // Send & Edit
+        window.editMessage = async (id, old) => { const n = prompt("修改訊息：", old); if(n && n!==old) await updateDoc(doc(db, 'messages', id), { message: n.trim(), isEdited: true }); };
+        
+        async function sendPayload(type, content, fileUrl='', fileName='') {
             if (!currentUser) return;
-            const payload = {
-                chatId: currentRoomId,
-                senderId: currentUser.uid,
-                senderEmail: myProfile.email,
-                senderName: myProfile.name,
-                message: content,
-                type: type,
-                fileUrl: fileUrl,
-                fileName: fileName,
-                timestamp: Date.now()
-            };
-
-            try {
-                await addDoc(collection(db, 'messages'), payload);
-                setTimeout(() => {
-                    const el = document.getElementById('chat-history');
-                    el.scrollTop = el.scrollHeight;
-                }, 100);
-            } catch (error) {
-                showToast("訊息傳送失敗", "error");
-                console.error(error);
-            }
+            const payload = { chatId: currentRoomId, senderId: currentUser.uid, senderEmail: myProfile.email, senderName: myProfile.name, message: content, type, fileUrl, fileName, timestamp: Date.now(), reactions: {} };
+            if(replyingToId) { payload.replyTo = replyingToId; payload.replyToText = replyingToText; cancelReply(); }
+            await addDoc(collection(db, 'messages'), payload);
+            document.getElementById('chat-history').scrollTop = 999999;
         }
 
-        document.getElementById('send-btn').addEventListener('click', () => {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if (text) {
-                sendPayload('text', text);
-                input.value = '';
-            }
+        // Input Handle (Shift+Enter for newline)
+        const chatInput = document.getElementById('chat-input');
+        chatInput.addEventListener('keydown', e => {
+            if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('send-btn').click(); }
         });
+        document.getElementById('send-btn').onclick = () => { if(chatInput.value.trim()) { sendPayload('text', chatInput.value.trim()); chatInput.value = ''; } };
 
-        document.getElementById('chat-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') document.getElementById('send-btn').click();
-        });
-
-        // ==========================================
-        // 檔案與圖片上傳系統 (內建前端自動化壓縮)
-        // ==========================================
-        const fileInput = document.getElementById('file-upload-input');
-        const uploadStatus = document.getElementById('upload-status');
-
-        fileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            fileInput.value = ''; 
-
-            uploadStatus.style.display = 'flex';
-            const isImage = file.type.startsWith('image/');
-            
-            if (isImage) {
-                uploadStatus.querySelector('span').textContent = '圖片壓縮處理中...';
-                
+        // Drag & Drop & Paste handling for uploads
+        const handleFile = file => {
+            const us = document.getElementById('upload-status'); us.style.display = 'flex';
+            if (file.type.startsWith('image/')) {
+                us.querySelector('span').textContent = '圖片壓縮處理中...';
                 const reader = new FileReader();
-                reader.onload = function(event) {
+                reader.onload = e => {
                     const img = new Image();
-                    img.onload = async function() {
-                        const MAX_WIDTH = 1200;
-                        const MAX_HEIGHT = 1200;
-                        let width = img.width;
-                        let height = img.height;
-
-                        if (width > height) {
-                            if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                        } else {
-                            if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                        }
-
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                        
-                        if (dataUrl.length > 950000) {
-                            showToast("圖片原始解析度過高，壓縮後仍超出資料庫極限，請嘗試裁切圖片", "error");
-                            uploadStatus.style.display = 'none';
-                            return;
-                        }
-
-                        await sendPayload('image', '分享了一張圖片', dataUrl, file.name);
-                        uploadStatus.style.display = 'none';
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-                
+                    img.onload = async () => {
+                        let w = img.width, h = img.height; const MAX = 1200;
+                        if(w>h && w>MAX) { h*=MAX/w; w=MAX; } else if(h>MAX) { w*=MAX/h; h=MAX; }
+                        const cvs = document.createElement('canvas'); cvs.width=w; cvs.height=h;
+                        cvs.getContext('2d').drawImage(img, 0, 0, w, h);
+                        const url = cvs.toDataURL('image/jpeg', 0.7);
+                        if(url.length > 950000) showToast("圖片過大", "error"); else await sendPayload('image', '分享圖片', url, file.name);
+                        us.style.display = 'none';
+                    }; img.src = e.target.result;
+                }; reader.readAsDataURL(file);
             } else {
-                if (file.size > 700 * 1024) {
-                    showToast(`文件過大 (${Math.round(file.size/1024)}KB)！Firestore 資料庫限制單筆一般文件不得超過 700KB`, "error");
-                    uploadStatus.style.display = 'none';
-                    return;
-                }
-
-                uploadStatus.querySelector('span').textContent = '檔案上傳中...';
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    await sendPayload('file', '分享了一個檔案', event.target.result, file.name);
-                    uploadStatus.style.display = 'none';
-                };
+                if (file.size > 700000) { showToast("文件不得超過 700KB", "error"); us.style.display='none'; return; }
+                us.querySelector('span').textContent = '檔案上傳中...';
+                const reader = new FileReader(); reader.onload = async e => { await sendPayload('file', '分享檔案', e.target.result, file.name); us.style.display='none'; };
                 reader.readAsDataURL(file);
             }
-        });
+        };
 
+        document.getElementById('file-upload-input').onchange = e => { if(e.target.files[0]) handleFile(e.target.files[0]); e.target.value=''; };
+        document.addEventListener('paste', e => { for(let i of (e.clipboardData||e.originalEvent.clipboardData).items) { if(i.kind==='file' && i.type.startsWith('image/')) handleFile(i.getAsFile()); } });
+        const hist = document.getElementById('chat-history');
+        hist.ondragover = e => e.preventDefault(); hist.ondrop = e => { e.preventDefault(); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); };
     </script>
 </body>
 </html>
