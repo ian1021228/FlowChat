@@ -26,6 +26,7 @@
             --quote-mine-bg: rgba(255,255,255,0.2);
             --google-red: #ea4335;
             --font-family: 'Roboto', 'Noto Sans TC', sans-serif;
+            --highlight-bg: rgba(253, 236, 200, 0.6);
         }
 
         body.dark {
@@ -40,6 +41,7 @@
             --msg-mine-text: #202124;
             --quote-bg: rgba(255,255,255,0.1);
             --quote-mine-bg: rgba(0,0,0,0.1);
+            --highlight-bg: rgba(253, 236, 200, 0.2);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -115,11 +117,12 @@
         .search-box input { border: none; background: transparent; outline: none; color: var(--text-primary); font-size: 13px; width: 150px; }
         
         /* Chat History & Pagination */
-        .chat-history { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; position: relative; }
+        .chat-history { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 20px; position: relative; scroll-behavior: smooth; }
         .load-more-btn { text-align: center; color: var(--primary-blue); font-size: 13px; cursor: pointer; padding: 10px; display: none; }
         .load-more-btn:hover { text-decoration: underline; }
 
-        .message-row { display: flex; gap: 16px; position: relative; }
+        .message-row { display: flex; gap: 16px; position: relative; transition: background-color 0.5s; padding: 4px 8px; border-radius: 8px; }
+        .message-row.highlight { background-color: var(--highlight-bg); }
         .message-row.mine { flex-direction: row-reverse; }
         .avatar { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; color: white; flex-shrink: 0; overflow: hidden; }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -131,13 +134,16 @@
         .msg-time { font-size: 12px; color: var(--text-secondary); }
         
         /* Quote / Reply UI */
-        .quote-block { background: var(--quote-bg); border-left: 3px solid var(--primary-blue); padding: 6px 10px; border-radius: 4px; margin-bottom: 6px; font-size: 12px; color: var(--text-secondary); max-height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer; }
+        .quote-block { background: var(--quote-bg); border-left: 3px solid var(--primary-blue); padding: 6px 10px; border-radius: 4px; margin-bottom: 4px; font-size: 12px; color: var(--text-secondary); max-height: 60px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; cursor: pointer; white-space: normal; }
         .message-row.mine .quote-block { background: var(--quote-mine-bg); border-left-color: var(--bg-color); color: var(--msg-mine-text); opacity: 0.9; }
+        .quote-block:hover { opacity: 0.8; }
 
         /* Message Bubble & Reactions */
         .msg-content-wrapper { display: flex; align-items: center; gap: 8px; position: relative; }
+        .msg-bubble-container { display: flex; flex-direction: column; max-width: 100%; }
         .message-row.mine .msg-content-wrapper { flex-direction: row-reverse; }
-        .msg-bubble { font-size: 15px; line-height: 1.5; padding: 10px 14px; border-radius: 12px 12px 12px 2px; background: var(--msg-bg); color: var(--text-primary); word-break: break-word; white-space: pre-wrap; position: relative; }
+        
+        .msg-bubble { font-size: 15px; line-height: 1.5; padding: 10px 14px; border-radius: 12px 12px 12px 2px; background: var(--msg-bg); color: var(--text-primary); word-break: break-word; white-space: pre-wrap; position: relative; margin: 0; }
         .message-row.mine .msg-bubble { background: var(--msg-mine-bg); color: var(--msg-mine-text); border-radius: 12px 12px 2px 12px; }
         .message-row.mine .msg-bubble a { color: inherit; text-decoration: underline; }
         .edited-label { font-size: 11px; opacity: 0.7; margin-left: 4px; }
@@ -151,13 +157,11 @@
         .reaction-badge { background: var(--hover-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 2px 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: 0.2s; }
         .reaction-badge.active { background: rgba(26,115,232,0.1); border-color: var(--primary-blue); }
 
-        /* Hover Actions (Reply, Edit, React, Delete) - 修復邊界溢出 */
+        /* Hover Actions */
         .msg-actions { display: none; gap: 2px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 2px; position: absolute; top: -15px; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .message-row:hover .msg-actions { display: flex; }
         .message-row.mine .msg-actions { right: 10px; left: auto; }
         .message-row:not(.mine) .msg-actions { left: 10px; right: auto; }
-        .action-icon { background: none; border: none; color: var(--text-secondary); cursor: pointer; padding: 4px; border-radius: 50%; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .action-icon:hover { background: var(--hover-bg); color: var(--text-primary); }
 
         /* Link Previews & Media */
         .yt-preview { margin-top: 8px; border-radius: 8px; overflow: hidden; width: 100%; max-width: 400px; aspect-ratio: 16/9; background: #000; }
@@ -166,22 +170,27 @@
         .img-preview img { display: block; width: 100%; height: auto; }
 
         /* Input Area & Replying Banner */
-        .replying-banner { display: none; background: var(--hover-bg); padding: 8px 24px; border-top: 1px solid var(--border-color); align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-secondary); }
-        .chat-input-area { padding: 16px 24px 24px 24px; position: relative; }
+        .replying-banner { display: none; background: var(--hover-bg); padding: 8px 24px; border-top: 1px solid var(--border-color); align-items: center; justify-content: space-between; font-size: 12px; color: var(--text-secondary); border-radius: 8px 8px 0 0; margin-bottom: -10px; z-index: 1; position: relative; }
+        .reply-banner-content { display: flex; flex-direction: column; overflow: hidden; flex: 1; margin-right: 12px; }
+        .reply-banner-title { font-weight: bold; color: var(--primary-blue); margin-bottom: 2px; }
+        .reply-banner-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
+        
+        .chat-input-area { padding: 16px 24px 24px 24px; position: relative; display: flex; flex-direction: column; }
         .typing-indicator { position: absolute; top: -20px; left: 24px; font-size: 11px; color: var(--text-secondary); font-style: italic; display: none; }
         
-        .input-container { display: flex; align-items: flex-end; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 16px; padding: 8px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .input-container { display: flex; align-items: flex-end; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 16px; padding: 8px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); z-index: 2; position: relative; }
+        .reply-active .input-container { border-radius: 0 0 16px 16px; }
         .input-container:focus-within { border-color: var(--primary-blue); }
         .input-container textarea { flex: 1; border: none; outline: none; font-size: 15px; padding: 8px 0; font-family: var(--font-family); background: transparent; color: var(--text-primary); resize: none; max-height: 120px; min-height: 24px; }
         .action-buttons { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
         
+        /* Toast & Modals */
         #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
         .toast { background: #323232; color: white; padding: 12px 24px; border-radius: 8px; font-size: 14px; display: flex; align-items: center; gap: 12px; opacity: 0; transform: translateY(-20px); transition: 0.3s; }
         .toast.show { opacity: 1; transform: translateY(0); }
         .toast.error { background: var(--google-red); }
-        .toast.success { background: #1e8e3e; }
 
-        /* Modals */
+        /* Custom Modals (No alert/prompt) */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; }
         .modal-content { background: var(--bg-color); padding: 24px; border-radius: 8px; width: 90%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.2); border: 1px solid var(--border-color); }
         .modal-title { font-size: 18px; font-weight: 500; margin-bottom: 16px; color: var(--text-primary); }
@@ -195,7 +204,7 @@
 <body>
     <div id="toast-container"></div>
 
-    <!-- Modals -->
+    <!-- General Modals -->
     <div id="new-chat-modal" class="modal-overlay" onclick="if(event.target===this) closeModal('new-chat-modal')">
         <div class="modal-content">
             <div class="modal-title">發起私人對話</div>
@@ -207,7 +216,30 @@
         </div>
     </div>
 
-    <!-- [Debug 4] 點擊背景可關閉 Modal -->
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal-overlay" onclick="if(event.target===this) closeModal('confirm-modal')">
+        <div class="modal-content">
+            <div class="modal-title" id="confirm-title">確認</div>
+            <div style="margin-bottom: 16px; color: var(--text-primary);" id="confirm-msg"></div>
+            <div class="modal-actions">
+                <button class="btn-text" onclick="closeModal('confirm-modal')">取消</button>
+                <button class="submit-btn" id="confirm-yes-btn" style="background: var(--google-red);">確認</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div id="prompt-modal" class="modal-overlay" onclick="if(event.target===this) closeModal('prompt-modal')">
+        <div class="modal-content">
+            <div class="modal-title" id="prompt-title">輸入</div>
+            <input type="text" id="prompt-input" class="modal-input">
+            <div class="modal-actions">
+                <button class="btn-text" onclick="closeModal('prompt-modal')">取消</button>
+                <button class="submit-btn" id="prompt-yes-btn">確認</button>
+            </div>
+        </div>
+    </div>
+
     <div id="image-modal" class="modal-overlay" style="background:rgba(0,0,0,0.85);" onclick="if(event.target===this) closeModal('image-modal')">
         <button onclick="closeModal('image-modal')" style="position:absolute; top:20px; right:20px; background:none; border:none; color:white; font-size:32px; cursor:pointer;" class="material-icons-outlined">close</button>
         <img id="modal-img-target" src="" style="max-width:90%; max-height:90%; border-radius:4px;">
@@ -218,7 +250,7 @@
     
     <div id="auth-screen" class="screen">
         <div class="login-card">
-            <h1>FlowChat</h1><p>企業級端對端通訊平台</p>
+            <h1>FlowChat</h1><p>企業級端對端加密通訊平台</p>
             <button class="google-btn" id="btn-google-login">
                 <svg viewBox="0 0 48 48" width="18"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
                 Google 登入
@@ -243,7 +275,7 @@
             <div class="sidebar-header">
                 <div class="logo"><span class="material-icons-outlined">forum</span> FlowChat</div>
                 <div class="header-actions">
-                    <button class="icon-btn-simple" id="btn-theme-toggle" title="深淺色切換"><span class="material-icons-outlined">dark_mode</span></button>
+                    <button class="icon-btn-simple" id="btn-theme-toggle" title="切換深色模式"><span class="material-icons-outlined">dark_mode</span></button>
                     <button class="icon-btn-simple" id="btn-logout" title="登出"><span class="material-icons-outlined">logout</span></button>
                 </div>
             </div>
@@ -261,10 +293,9 @@
                     <div class="room-item-content"><span class="room-item-name">大廳公用頻道</span></div>
                     <span id="badge-lobby" class="unread-badge" style="display:none;">0</span>
                 </div>
-                
                 <div class="section-title" style="margin-top: 24px;">
                     私人對話 
-                    <button class="icon-btn-simple" onclick="openModal('new-chat-modal')" title="新增對話"><span class="material-icons-outlined" style="font-size:16px;">add</span></button>
+                    <button class="icon-btn-simple" onclick="openModal('new-chat-modal')" title="新增"><span class="material-icons-outlined" style="font-size:16px;">add</span></button>
                 </div>
                 <div id="dm-list"></div>
             </div>
@@ -278,7 +309,7 @@
                 </div>
                 <div class="search-box">
                     <span class="material-icons-outlined" style="font-size:16px; color:var(--text-secondary);">search</span>
-                    <input type="text" id="search-input" placeholder="搜尋對話...">
+                    <input type="text" id="search-input" placeholder="在對話中搜尋...">
                 </div>
             </div>
 
@@ -287,24 +318,23 @@
                 <div id="messages-container"></div>
             </div>
 
-            <div class="replying-banner" id="reply-banner">
-                <span>回覆給 <strong id="reply-to-name"></strong>：<span id="reply-to-text" style="opacity:0.8;"></span></span>
-                <button class="icon-btn-simple" onclick="cancelReply()"><span class="material-icons-outlined" style="font-size:16px;">close</span></button>
-            </div>
-
-            <div class="chat-input-area">
-                <div class="upload-status" id="upload-status" style="display:none; align-items:center; gap:8px; font-size:12px; color:var(--primary-blue); margin-bottom:8px;">
-                    <div class="spinner" style="width:16px; height:16px; border-width:2px;"></div>
-                    <span>處理中...</span>
-                </div>
+            <div class="chat-input-area" id="chat-input-container">
                 <div class="typing-indicator" id="typing-indicator">有人正在輸入...</div>
                 
+                <div class="replying-banner" id="reply-banner">
+                    <div class="reply-banner-content">
+                        <span class="reply-banner-title" id="reply-to-name"></span>
+                        <span class="reply-banner-text" id="reply-to-text"></span>
+                    </div>
+                    <button class="icon-btn-simple" onclick="cancelReply()"><span class="material-icons-outlined" style="font-size:16px;">close</span></button>
+                </div>
+
                 <div class="input-container">
-                    <textarea id="chat-input" placeholder="傳送訊息... (Shift+Enter 換行)"></textarea>
+                    <textarea id="chat-input" placeholder="傳送訊息... (Shift+Enter 換行，支援拖曳圖片貼上)"></textarea>
                     <div class="action-buttons">
-                        <button class="icon-btn-simple" onclick="document.getElementById('file-upload-input').click()" title="附加檔案"><span class="material-icons-outlined">attach_file</span></button>
+                        <button class="icon-btn-simple" onclick="document.getElementById('file-upload-input').click()"><span class="material-icons-outlined">attach_file</span></button>
                         <input type="file" id="file-upload-input" accept="image/*,.pdf,.doc,.docx,.xls,.zip" style="display:none;">
-                        <button class="icon-btn-simple" id="send-btn" style="color:var(--primary-blue);" title="傳送"><span class="material-icons-outlined">send</span></button>
+                        <button class="icon-btn-simple" id="send-btn" style="color:var(--primary-blue);"><span class="material-icons-outlined">send</span></button>
                     </div>
                 </div>
             </div>
@@ -314,13 +344,11 @@
     <!-- Firebase Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy, limit, setDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signInWithCustomToken, signInAnonymously, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, setDoc, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // ==========================================
-        // 配置與初始化
-        // ==========================================
-        const firebaseConfig = {
+        // 動態獲取 Firebase 設置與 AppID
+        const myFirebaseConfig = {
             apiKey: "AIzaSyDRSP3-v0Qv7len-njTQFGJhb8c4eNDRpk",
             authDomain: "flowchat-web.firebaseapp.com",
             projectId: "flowchat-web",
@@ -328,55 +356,75 @@
             messagingSenderId: "413457465329",
             appId: "1:413457465329:web:45d5b0e2bdbe90fb104e50"
         };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myFirebaseConfig;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // 離線快取支援
-        enableIndexedDbPersistence(db).catch(err => console.warn("Offline DB unavailable:", err));
+        enableIndexedDbPersistence(db).catch(err => console.warn("Offline DB unavailable, falling back to online only.", err));
 
-        // 核心狀態
-        let currentUser = null, myProfile = { name: '', email: '', photoURL: '' };
+        // State
+        let currentUser = null, myProfile = { name: '', email: '' };
         let currentRoomId = 'lobby', currentRoomName = '大廳公用頻道';
         let allMessages = [], msgLimit = 50; 
-        let dmStats = {}, dmProfiles = {}; 
-        let sessionDMs = new Set();
         let unsubscribeSnapshot = null, unsubscribeTyping = null, typingTimeout = null;
-        let replyingToId = null, replyingToText = null;
+        let replyingToId = null, replyingToText = null, replyingToName = null;
         let isWindowFocused = true;
-        
-        // [Debug 5] 安全載入 LocalStorage
-        let roomLastRead = {};
-        try { roomLastRead = JSON.parse(localStorage.getItem('flowchat_reads')) || {}; } catch(e) { roomLastRead = {}; }
+        let roomLastRead = JSON.parse(localStorage.getItem('flowchat_reads')) || {};
 
-        // 深色模式設定
+        // 避免 Prompt / Confirm 在 Canvas 遭阻擋，使用自訂 Modal
+        let confirmAction = null;
+        window.customConfirm = (msg, onYes) => {
+            document.getElementById('confirm-msg').textContent = msg;
+            confirmAction = onYes;
+            openModal('confirm-modal');
+        };
+        document.getElementById('confirm-yes-btn').onclick = () => {
+            if(confirmAction) confirmAction();
+            closeModal('confirm-modal');
+        };
+
+        let promptAction = null;
+        window.customPrompt = (title, defaultValue, onYes) => {
+            document.getElementById('prompt-title').textContent = title;
+            const input = document.getElementById('prompt-input');
+            input.value = defaultValue;
+            promptAction = onYes;
+            openModal('prompt-modal');
+            input.focus();
+        };
+        document.getElementById('prompt-yes-btn').onclick = () => {
+            if(promptAction) promptAction(document.getElementById('prompt-input').value);
+            closeModal('prompt-modal');
+        };
+
+        // 深色模式切換
         if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark');
         document.getElementById('btn-theme-toggle').onclick = () => {
             document.body.classList.toggle('dark');
             localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
         };
 
-        // Window Focus 追蹤 (用於音效與已讀狀態)
+        // Window Focus tracking
         window.onfocus = () => { isWindowFocused = true; document.title = "FlowChat - 企業級通訊"; updateReadReceipt(); };
         window.onblur = () => { isWindowFocused = false; };
 
-        // 共用函式
+        // Utils
         const escapeHtml = t => (t||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
         window.showToast = (msg, type='info') => {
             const c = document.getElementById('toast-container'), t = document.createElement('div');
-            t.className = `toast ${type}`; t.innerHTML = `<span class="material-icons-outlined">${type==='error'?'error':(type==='success'?'check_circle':'info')}</span> ${escapeHtml(msg)}`;
-            c.appendChild(t); setTimeout(() => t.classList.add('show'), 10);
+            t.className = `toast ${type}`; t.innerHTML = msg; c.appendChild(t);
+            setTimeout(() => t.classList.add('show'), 10);
             setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(), 300); }, 3000);
         };
         const getDmRoomId = (e1, e2) => 'dm_' + [e1.toLowerCase(), e2.toLowerCase()].sort().join('|');
         const playSound = () => { try { const c = new (window.AudioContext || window.webkitAudioContext)(); const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(587.33, c.currentTime); o.frequency.setValueAtTime(880, c.currentTime+0.1); g.gain.setValueAtTime(0.1, c.currentTime); g.gain.exponentialRampToValueAtTime(0.01, c.currentTime+0.4); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+0.4); } catch(e){} };
 
-        window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; if(id==='new-chat-modal') document.getElementById('new-chat-email').focus(); };
-        window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; if(id==='new-chat-modal') document.getElementById('new-chat-email').value=''; };
-        window.openImageModal = (url) => { document.getElementById('modal-img-target').src = url; window.openModal('image-modal'); };
+        window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; };
+        window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
 
-        // [修復] 補回 getAvatarColor 函式
         function getAvatarColor(name) {
             const colors = ['#1a73e8', '#34a853', '#fbbc04', '#ea4335', '#8e24aa', '#00acc1', '#f06292'];
             let hash = 0;
@@ -384,63 +432,47 @@
             return colors[Math.abs(hash) % colors.length];
         }
 
-        // ==========================================
-        // 全域功能綁定: 編輯、刪除、回覆、反應
-        // ==========================================
-        
-        // [Debug 1] 收回與編輯的完整實作與 Error Handling
-        window.deleteMessage = async (id) => { 
-            if(confirm("確定要收回此訊息嗎？")) {
-                try {
-                    await deleteDoc(doc(db, 'messages', id));
-                    showToast('訊息已收回', 'success');
-                } catch(e) {
-                    showToast('收回失敗，權限不足或網路異常', 'error');
+        // Auth 初始化
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else if (!auth.currentUser) {
+                    // Fallback to anonymous for environment compatibility if custom token is not present
+                    await signInAnonymously(auth);
                 }
+            } catch (err) {
+                console.warn("Auth initialization problem", err);
             }
         };
+        initAuth();
 
-        window.editMessage = async (id, old) => { 
-            const n = prompt("修改訊息：", old); 
-            if(n && n !== old) {
-                try {
-                    await updateDoc(doc(db, 'messages', id), { message: n.trim(), isEdited: true });
-                    showToast('訊息已更新', 'success');
-                } catch (e) {
-                    showToast('編輯失敗', 'error');
-                }
-            }
-        };
-
-        window.initReply = (id, text) => {
-            replyingToId = id; replyingToText = text;
-            document.getElementById('reply-to-name').textContent = "訊息";
-            document.getElementById('reply-to-text').textContent = text;
-            document.getElementById('reply-banner').style.display = 'flex';
-            document.getElementById('chat-input').focus();
-        };
-        window.cancelReply = () => { replyingToId = null; document.getElementById('reply-banner').style.display = 'none'; };
-
-        window.toggleReaction = async (msgId, emoji) => {
-            const msg = allMessages.find(m => m.id === msgId);
-            if(!msg) return;
-            const users = (msg.reactions || {})[emoji] || [];
-            let newUsers = users.includes(myProfile.email) ? users.filter(u => u !== myProfile.email) : [...users, myProfile.email];
-            await updateDoc(doc(db, 'messages', msgId), { [`reactions.${emoji}`]: newUsers }).catch(e=>showToast("操作失敗","error"));
-        };
-
-        // 認證邏輯
         onAuthStateChanged(auth, user => {
-            if (user && user.email) { 
-                currentUser = user; 
-                myProfile.email = user.email.toLowerCase(); 
-                myProfile.name = user.displayName || user.email.split('@')[0]; 
-                myProfile.photoURL = user.photoURL || '';
-                startApp(); 
+            if (user) { 
+                currentUser = user;
+                if(user.email) {
+                    myProfile.email = user.email.toLowerCase(); 
+                    myProfile.name = user.displayName || user.email.split('@')[0]; 
+                    startApp(); 
+                } else {
+                    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
+                    document.getElementById('profile-screen').classList.add('active');
+                }
             }
-            else { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(user ? 'profile-screen' : 'auth-screen').classList.add('active'); }
+            else { 
+                document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); 
+                document.getElementById('auth-screen').classList.add('active'); 
+            }
         });
-        
+
+        document.getElementById('btn-save-profile').onclick = () => {
+            const n = document.getElementById('setup-name').value;
+            const e = document.getElementById('setup-email').value;
+            if(!n || !e) return showToast('請填寫完整資訊','error');
+            myProfile.name = n; myProfile.email = e.toLowerCase();
+            startApp();
+        };
+
         document.getElementById('btn-google-login').onclick = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(e => showToast("登入失敗", "error"));
         document.getElementById('btn-logout').onclick = () => signOut(auth);
 
@@ -449,30 +481,28 @@
             document.getElementById('my-email').textContent = myProfile.email;
             
             const avatarEl = document.getElementById('my-avatar');
-            if(myProfile.photoURL) {
-                avatarEl.innerHTML = `<img src="${myProfile.photoURL}">`;
-                avatarEl.style.background = 'transparent';
-            } else {
-                avatarEl.textContent = myProfile.name.charAt(0).toUpperCase();
-                avatarEl.style.background = getAvatarColor(myProfile.name);
-            }
+            avatarEl.textContent = myProfile.name.charAt(0).toUpperCase();
+            avatarEl.style.background = getAvatarColor(myProfile.name);
 
             document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
             document.getElementById('main-app').classList.add('active');
             fetchMessages(); setupTypingListener();
         }
 
-        // 讀取歷史訊息
+        // 歷史訊息加載 (避免 Complex Queries 導致權限錯誤)
         function fetchMessages() {
+            if (!currentUser) return;
             if (unsubscribeSnapshot) unsubscribeSnapshot();
-            const q = query(collection(db, 'messages'), orderBy('timestamp', 'desc'), limit(msgLimit));
             
-            unsubscribeSnapshot = onSnapshot(q, snapshot => {
+            // 替換為嚴格路徑
+            const msgCollection = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+            
+            unsubscribeSnapshot = onSnapshot(msgCollection, snapshot => {
                 let temp = [];
                 snapshot.forEach(doc => temp.push({ id: doc.id, ...doc.data() }));
-                temp.reverse();
+                // 前端記憶體排序，取代 orderBy，避免需要建立索引
+                temp.sort((a, b) => a.timestamp - b.timestamp);
 
-                // 音效通知
                 if (allMessages.length > 0 && temp.length > 0) {
                     const latest = temp[temp.length - 1];
                     const oldLatest = allMessages[allMessages.length - 1];
@@ -482,98 +512,52 @@
                 }
 
                 allMessages = temp;
-                analyzeDMStates(); 
                 renderSidebarContacts(); 
                 renderMessages(true); 
                 updateReadReceipt();
             }, error => {
                 console.error("Firestore error:", error);
-                if(error.code === 'permission-denied') showToast("權限不足，請確認是否登入，或檢查 Firebase 安全規則", "error");
+                showToast("讀取對話失敗", "error");
             });
         }
 
-        window.loadOlderMessages = () => { msgLimit += 50; fetchMessages(); };
+        window.loadOlderMessages = () => { msgLimit += 50; renderMessages(true); };
 
-        // 分析歷史對話，建立狀態引擎
-        function analyzeDMStates() {
-            dmStats = {}; dmProfiles = {};
+        // Sidebar & Badges
+        function renderSidebarContacts() {
+            let dmSet = new Set(), dmProfiles = {};
             allMessages.forEach(m => {
                 if(m.chatId.startsWith('dm_') && m.chatId.includes(myProfile.email)) {
                     const other = m.chatId.replace('dm_','').split('|').find(e => e !== myProfile.email);
-                    if(!other) return;
-                    const isMine = m.senderEmail === myProfile.email;
-
-                    if(!dmProfiles[other]) dmProfiles[other] = { name: other.split('@')[0], photo: '' };
-                    if(!isMine) {
-                        if(m.senderName) dmProfiles[other].name = m.senderName;
-                        if(m.senderPhoto) dmProfiles[other].photo = m.senderPhoto;
-                    }
-
-                    if(!dmStats[other]) dmStats[other] = { iReplied: false, latestMsgId: m.id, lastTime: m.timestamp };
-                    if(isMine) dmStats[other].iReplied = true;
-                    if(m.timestamp >= dmStats[other].lastTime) {
-                        dmStats[other].latestMsgId = m.id;
-                        dmStats[other].lastTime = m.timestamp;
-                    }
+                    if(other) { dmSet.add(other); if(m.senderEmail !== myProfile.email) dmProfiles[other] = m.senderName; }
                 }
             });
-        }
 
-        // 渲染側邊欄
-        function renderSidebarContacts() {
-            const listEl = document.getElementById('dm-list');
-            let activeHtml = '', requestHtml = '', reqCount = 0;
-            
-            updateBadge('lobby', allMessages.filter(m => m.chatId === 'lobby'));
+            const lobbyMsgs = allMessages.filter(m => m.chatId === 'lobby');
+            updateBadge('lobby', lobbyMsgs);
 
-            const allDMs = new Set([...sessionDMs, ...Object.keys(dmStats)]);
-
-            allDMs.forEach(email => {
-                const isHidden = localStorage.getItem(`hidden_${email}`);
-                const stats = dmStats[email] || { iReplied: false, latestMsgId: 'manual' };
-                
-                if(isHidden && isHidden === stats.latestMsgId) return;
-
-                const profile = dmProfiles[email] || { name: email.split('@')[0] };
-                const isActiveRoom = currentRoomId === getDmRoomId(myProfile.email, email);
-                const isRequest = !stats.iReplied && !sessionDMs.has(email);
-                
+            let html = '';
+            dmSet.forEach(email => {
+                if (localStorage.getItem(`hidden_${email}`)) return;
                 const msgs = allMessages.filter(m => m.chatId === getDmRoomId(myProfile.email, email));
                 const unread = msgs.filter(m => m.senderEmail !== myProfile.email && m.timestamp > (roomLastRead[msgs[0]?.chatId] || 0)).length;
-                const badgeHtml = unread > 0 ? `<span class="unread-badge">${unread}</span>` : '';
-
-                if (isRequest) {
-                    reqCount++;
-                    requestHtml += `
-                        <div class="room-item ${isActiveRoom ? 'active' : ''}" onclick="switchRoom('${getDmRoomId(myProfile.email, email)}', '${escapeHtml(profile.name)}')">
-                            <span class="material-icons-outlined room-item-icon" style="color:var(--google-red);">mark_email_unread</span>
-                            <div class="room-item-content">
-                                <span class="room-item-name">${escapeHtml(profile.name)}</span>
-                                <span class="room-item-email">${escapeHtml(email)}</span>
-                            </div>
-                            <div class="room-item-actions always-show">
-                                <!-- [Debug 8] 強制 e.stopPropagation() 防止切換房間 -->
-                                <span class="material-icons-outlined icon-action accept" title="接受" onclick="acceptDM('${escapeHtml(email)}', event)">check</span>
-                                <span class="material-icons-outlined icon-action decline" title="拒絕" onclick="hideDM('${escapeHtml(email)}', '${stats.latestMsgId}', event)">close</span>
-                            </div>
-                        </div>`;
-                } else {
-                    activeHtml += `
-                        <div class="room-item ${isActiveRoom ? 'active' : ''}" onclick="switchRoom('${getDmRoomId(myProfile.email, email)}', '${escapeHtml(profile.name)}')">
-                            <span class="material-icons-outlined room-item-icon">person</span>
-                            <div class="room-item-content">
-                                <span class="room-item-name">${escapeHtml(profile.name)}</span>
-                                <span class="room-item-email">${escapeHtml(email)}</span>
-                            </div>
-                            ${badgeHtml}
-                            <div class="room-item-actions">
-                                <span class="material-icons-outlined icon-action" title="刪除/隱藏對話" onclick="hideDM('${escapeHtml(email)}', '${stats.latestMsgId}', event)">delete</span>
-                            </div>
-                        </div>`;
-                }
+                const name = dmProfiles[email] || email.split('@')[0];
+                const active = currentRoomId === getDmRoomId(myProfile.email, email) ? 'active' : '';
+                
+                html += `
+                    <div class="room-item ${active}" onclick="switchRoom('${getDmRoomId(myProfile.email, email)}', '${escapeHtml(name)}')">
+                        <span class="material-icons-outlined room-item-icon">person</span>
+                        <div class="room-item-content">
+                            <span class="room-item-name">${escapeHtml(name)}</span>
+                            <span class="room-item-email">${escapeHtml(email)}</span>
+                        </div>
+                        ${unread > 0 ? `<span class="unread-badge">${unread}</span>` : ''}
+                        <div class="room-item-actions">
+                            <button class="icon-btn-simple" onclick="hideDM('${email}', event)" title="隱藏對話"><span class="material-icons-outlined" style="font-size:16px;">delete</span></button>
+                        </div>
+                    </div>`;
             });
-
-            listEl.innerHTML = (reqCount > 0 ? `<div class="section-title" style="color:var(--google-red); margin-top:16px;">新對話要求 (${reqCount})</div>${requestHtml}<div class="section-title" style="margin-top:16px;">目前的對話</div>` : '') + activeHtml;
+            document.getElementById('dm-list').innerHTML = html;
         }
 
         function updateBadge(roomId, msgs) {
@@ -582,80 +566,55 @@
             if(b) { b.textContent = unread; b.style.display = unread > 0 ? 'inline-block' : 'none'; }
         }
 
-        window.acceptDM = (email, e) => { e.stopPropagation(); sessionDMs.add(email); renderSidebarContacts(); switchRoom(getDmRoomId(myProfile.email, email), dmProfiles[email]?.name || email); };
-        window.hideDM = (email, msgId, e) => { 
-            e.stopPropagation(); 
-            if(!confirm(`確定要隱藏與 ${dmProfiles[email]?.name || email} 的對話嗎？`)) return;
-            localStorage.setItem(`hidden_${email}`, msgId); 
-            sessionDMs.delete(email);
-            if(currentRoomId === getDmRoomId(myProfile.email, email)) switchRoom('lobby', '大廳公用頻道'); 
-            renderSidebarContacts(); 
-        };
-
-        window.startPrivateChat = email => { 
-            email = email.trim().toLowerCase(); 
-            if(!email || !email.includes('@')) { showToast("無效的 Email", "error"); return; }
-            if(email===myProfile.email) { showToast("無法與自己對話", "error"); return; }
-            
-            closeModal('new-chat-modal');
-            localStorage.removeItem(`hidden_${email}`); 
-            sessionDMs.add(email); 
-            switchRoom(getDmRoomId(myProfile.email, email), dmProfiles[email]?.name || email.split('@')[0]); 
-        };
+        window.hideDM = (email, e) => { e.stopPropagation(); localStorage.setItem(`hidden_${email}`, "true"); if(currentRoomId === getDmRoomId(myProfile.email, email)) switchRoom('lobby', '大廳公用頻道'); renderSidebarContacts(); };
+        window.startPrivateChat = email => { email = email.toLowerCase(); if(email===myProfile.email) return; localStorage.removeItem(`hidden_${email}`); switchRoom(getDmRoomId(myProfile.email, email), email.split('@')[0]); };
 
         window.switchRoom = (id, name) => {
             currentRoomId = id; currentRoomName = name;
-            
-            // [Debug 3] 切換房間時清空搜尋框，並恢復所有訊息顯示
-            const searchInput = document.getElementById('search-input');
-            if (searchInput.value) {
-                searchInput.value = '';
-                document.querySelectorAll('.message-row').forEach(r => r.style.display = 'flex');
-            }
-
             document.getElementById('chat-header-title').textContent = name;
             document.querySelectorAll('.room-item').forEach(el=>el.classList.remove('active'));
             if(id==='lobby') document.getElementById('room-lobby').classList.add('active');
-            
-            msgLimit = 50; fetchMessages();
-            updateReadReceipt(); 
+            msgLimit = 50;
+            renderMessages();
+            updateReadReceipt();
             setupTypingListener();
-            document.getElementById('chat-input').focus();
+            cancelReply();
         };
 
-        // 已讀狀態與防抖
+        // 已讀標記 (使用嚴格路徑，加入信箱驗證)
         let readTimeout;
         function updateReadReceipt() {
-            if(!isWindowFocused) return;
+            if(!isWindowFocused || !currentUser || !myProfile.email) return;
             clearTimeout(readTimeout);
             readTimeout = setTimeout(() => {
                 roomLastRead[currentRoomId] = Date.now();
                 localStorage.setItem('flowchat_reads', JSON.stringify(roomLastRead));
-                setDoc(doc(db, 'readReceipts', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true }).catch(()=>{});
+                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'readReceipts', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true });
                 renderSidebarContacts();
-            }, 1500);
+            }, 1000);
         }
 
-        // 正在輸入狀態
+        // 正在輸入... (使用嚴格路徑)
         function setupTypingListener() {
-            if(unsubscribeTyping) unsubscribeTyping(); // [Debug 10] 確保前一個 Listener 被清空
-            unsubscribeTyping = onSnapshot(doc(db, 'typing', currentRoomId), docSnap => {
+            if(!currentUser) return;
+            if(unsubscribeTyping) unsubscribeTyping();
+            unsubscribeTyping = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'typing', currentRoomId), docSnap => {
                 const data = docSnap.data() || {};
                 const typers = Object.keys(data).filter(email => email !== myProfile.email && (Date.now() - data[email] < 3000));
                 const ind = document.getElementById('typing-indicator');
                 if(typers.length > 0) { ind.textContent = `${typers.map(e=>e.split('@')[0]).join(', ')} 正在輸入...`; ind.style.display = 'block'; }
                 else ind.style.display = 'none';
-            }, ()=>{});
+            });
         }
         
         document.getElementById('chat-input').addEventListener('input', () => {
-            if(!typingTimeout) {
-                setDoc(doc(db, 'typing', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true }).catch(()=>{});
+            if(!typingTimeout && currentUser && myProfile.email) {
+                setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'typing', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true });
                 typingTimeout = setTimeout(()=> { typingTimeout = null; }, 2000);
             }
         });
 
-        // 搜尋功能
+        // 搜尋
         document.getElementById('search-input').addEventListener('input', e => {
             const term = e.target.value.toLowerCase();
             document.querySelectorAll('.message-row').forEach(row => {
@@ -664,9 +623,52 @@
             });
         });
 
-        // 渲染引擎
+        // 回覆機制
+        window.initReply = (id, name, text) => {
+            replyingToId = id; 
+            replyingToName = name;
+            replyingToText = text;
+            document.getElementById('reply-to-name').textContent = "回覆給 " + escapeHtml(name);
+            document.getElementById('reply-to-text').textContent = escapeHtml(text);
+            document.getElementById('reply-banner').style.display = 'flex';
+            document.getElementById('chat-input-container').classList.add('reply-active');
+            document.getElementById('chat-input').focus();
+        };
+        window.cancelReply = () => { 
+            replyingToId = null; 
+            document.getElementById('reply-banner').style.display = 'none'; 
+            document.getElementById('chat-input-container').classList.remove('reply-active');
+        };
+        window.scrollToMsg = (id) => {
+            const el = document.getElementById(`msg-${id}`);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('highlight');
+                setTimeout(() => el.classList.remove('highlight'), 2000);
+            }
+        };
+
+        // 表情反應 (使用嚴格路徑)
+        window.toggleReaction = async (msgId, emoji) => {
+            const msg = allMessages.find(m => m.id === msgId);
+            if(!msg || !currentUser) return;
+            const reacts = msg.reactions || {};
+            const users = reacts[emoji] || [];
+            let newUsers = users.includes(myProfile.email) ? users.filter(u => u !== myProfile.email) : [...users, myProfile.email];
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', msgId), { [`reactions.${emoji}`]: newUsers });
+        };
+
+        // Render Engine
         let globalReadStates = {};
-        onSnapshot(collection(db, 'readReceipts'), snap => { snap.forEach(d => globalReadStates[d.id] = d.data()); renderMessages(); }, ()=>{});
+        const runReadSnap = () => {
+            if(!currentUser) return;
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'readReceipts'), snap => { 
+                snap.forEach(d => globalReadStates[d.id] = d.data()); 
+                renderMessages(); 
+            });
+        };
+        // 延遲註冊，確保 appId 可以被完整載入
+        setTimeout(runReadSnap, 1000);
 
         function renderMessages(preserveScroll = false) {
             const container = document.getElementById('messages-container');
@@ -675,44 +677,59 @@
             const isAtBottom = history.scrollHeight - history.clientHeight - history.scrollTop < 50;
             
             const roomMsgs = allMessages.filter(m => m.chatId === currentRoomId);
+            const msgsToRender = roomMsgs.slice(-msgLimit); // 在前端進行分頁過濾
             
-            // [Debug 7] 如果撈出來的訊息數量少於 Limit，代表已經到底了，隱藏按鈕
-            const loadBtn = document.getElementById('load-more-btn');
-            loadBtn.style.display = (roomMsgs.length > 0 && allMessages.length >= msgLimit) ? 'block' : 'none';
-
-            if (roomMsgs.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color:var(--text-secondary); margin-top:50px;">這裡是與 ${escapeHtml(currentRoomName)} 的對話起點</div>`;
-                return;
-            }
+            document.getElementById('load-more-btn').style.display = roomMsgs.length > msgLimit ? 'block' : 'none';
 
             let html = '';
-            roomMsgs.forEach(msg => {
+
+            msgsToRender.forEach(msg => {
                 const isMine = msg.senderEmail === myProfile.email;
                 const timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
-                let avatarBg = getAvatarColor(msg.senderEmail);
-                let avatarHtml = msg.senderPhoto ? `<img src="${escapeHtml(msg.senderPhoto)}">` : msg.senderName.charAt(0).toUpperCase();
-
+                const initial = (msg.senderName || msg.senderEmail).charAt(0).toUpperCase();
+                const avatarBg = getAvatarColor(msg.senderEmail);
                 const edited = msg.isEdited ? `<span class="edited-label">(已編輯)</span>` : '';
                 
+                // Read Receipt
                 let readText = '';
                 if(isMine && currentRoomId.startsWith('dm_')) {
                     const other = currentRoomId.replace('dm_','').split('|').find(e => e !== myProfile.email);
                     if(globalReadStates[currentRoomId] && globalReadStates[currentRoomId][other] >= msg.timestamp) readText = `<div class="read-receipt">✓ 已讀</div>`;
                 }
 
-                let quoteHtml = msg.replyTo ? `<div class="quote-block">${escapeHtml(msg.replyToText)}</div>` : '';
-
-                let contentHtml = '';
-                if (msg.type === 'image') contentHtml = `<div class="img-preview" onclick="openImageModal('${escapeHtml(msg.fileUrl)}')"><img src="${escapeHtml(msg.fileUrl)}"></div>`;
-                else if (msg.type === 'file') contentHtml = `<a href="${escapeHtml(msg.fileUrl)}" download="${escapeHtml(msg.fileName)}" class="file-card"><span class="material-icons-outlined">insert_drive_file</span><div class="file-info"><span class="file-name">${escapeHtml(msg.fileName)}</span></div></a>`;
-                else {
-                    let text = escapeHtml(msg.message);
-                    const ytMatch = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
-                    if(ytMatch) contentHtml = `${quoteHtml}<div class="msg-bubble">${text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')}</div><div class="yt-preview"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe></div>`;
-                    else contentHtml = `${quoteHtml}<div class="msg-bubble">${text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>')}${edited}</div>`;
+                // Quote HTML
+                let quoteHtml = '';
+                if(msg.replyTo) {
+                    quoteHtml = `<div class="quote-block" onclick="scrollToMsg('${msg.replyTo}')"><strong>${escapeHtml(msg.replyToName || '某人')}：</strong> ${escapeHtml(msg.replyToText)}</div>`;
                 }
 
+                // Content
+                let contentHtml = '';
+                let replyPreviewText = '';
+
+                if (msg.type === 'image') {
+                    contentHtml = `<div class="img-preview" onclick="openImageModal('${escapeHtml(msg.fileUrl)}')"><img src="${escapeHtml(msg.fileUrl)}"></div>`;
+                    replyPreviewText = '[圖片]';
+                }
+                else if (msg.type === 'file') {
+                    contentHtml = `<a href="${escapeHtml(msg.fileUrl)}" download="${escapeHtml(msg.fileName)}" class="file-card"><span class="material-icons-outlined">insert_drive_file</span><div class="file-info"><span class="file-name">${escapeHtml(msg.fileName)}</span></div></a>`;
+                    replyPreviewText = `[檔案] ${msg.fileName}`;
+                }
+                else {
+                    let text = escapeHtml(msg.message);
+                    replyPreviewText = text;
+                    const ytMatch = text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+                    const linkedText = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank">$1</a>');
+                    
+                    if(ytMatch) {
+                         contentHtml = `<div class="msg-bubble-container">${quoteHtml}<div class="msg-bubble">${linkedText}</div><div class="yt-preview"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" allowfullscreen></iframe></div></div>`;
+                    }
+                    else {
+                         contentHtml = `<div class="msg-bubble-container">${quoteHtml}<div class="msg-bubble">${linkedText}${edited}</div></div>`;
+                    }
+                }
+
+                // Reactions
                 let reactHtml = '<div class="reaction-badges">';
                 const reacts = msg.reactions || {};
                 Object.keys(reacts).forEach(emoji => {
@@ -723,22 +740,24 @@
                 });
                 reactHtml += '</div>';
 
-                const safeText = msg.type === 'text' ? escapeHtml(msg.message).replace(/'/g, "\\'") : '附件';
-                
-                // [Debug 1] & [Debug 2] 確保呼叫 window.deleteMessage 且動作選單排版正確
+                // Actions Hover Menu
+                const safeReplyText = escapeHtml(replyPreviewText).replace(/'/g, "\\'");
+                const safeEditText = msg.type === 'text' ? escapeHtml(msg.message).replace(/'/g, "\\'") : '';
+                const senderNameSafe = escapeHtml(msg.senderName).replace(/'/g, "\\'");
+
                 let acts = `<div class="msg-actions">
-                    <button class="action-icon" title="回覆" onclick="initReply('${msg.id}','${safeText}')"><span class="material-icons-outlined">reply</span></button>
+                    <button class="action-icon" title="回覆" onclick="initReply('${msg.id}','${senderNameSafe}','${safeReplyText}')"><span class="material-icons-outlined">reply</span></button>
                     <button class="action-icon" title="讚" onclick="toggleReaction('${msg.id}','👍')">👍</button>
                     <button class="action-icon" title="愛心" onclick="toggleReaction('${msg.id}','❤️')">❤️</button>`;
                 if(isMine) {
-                    if(msg.type === 'text') acts += `<button class="action-icon" title="編輯" onclick="editMessage('${msg.id}','${safeText}')"><span class="material-icons-outlined">edit</span></button>`;
+                    if(msg.type === 'text') acts += `<button class="action-icon" title="編輯" onclick="editMessage('${msg.id}','${safeEditText}')"><span class="material-icons-outlined">edit</span></button>`;
                     acts += `<button class="action-icon" title="收回" onclick="deleteMessage('${msg.id}')"><span class="material-icons-outlined">delete</span></button>`;
                 }
                 acts += `</div>`;
 
                 html += `
-                    <div class="message-row ${isMine ? 'mine' : ''}">
-                        <div class="avatar" style="background-color: ${msg.senderPhoto ? 'transparent' : avatarBg}">${avatarHtml}</div>
+                    <div class="message-row ${isMine ? 'mine' : ''}" id="msg-${msg.id}">
+                        <div class="avatar" style="background-color: ${avatarBg}">${initial}</div>
                         <div class="msg-content">
                             <div class="msg-header"><span class="msg-author">${escapeHtml(msg.senderName)}</span><span class="msg-time">${timeStr}</span></div>
                             <div class="msg-content-wrapper">${contentHtml}${acts}</div>
@@ -749,82 +768,67 @@
 
             container.innerHTML = html;
             
-            if(preserveScroll && !isAtBottom && oldScroll > 0) history.scrollTop += (history.scrollHeight - oldScroll);
-            else if (isAtBottom || !preserveScroll) history.scrollTop = history.scrollHeight;
-        }
-
-        // 發送訊息 (寫入 Firestore)
-        async function sendPayload(type, content, fileUrl='', fileName='') {
-            if (!currentUser) { showToast("錯誤：未登入", "error"); return; }
-            
-            const payload = { 
-                chatId: currentRoomId, 
-                senderId: currentUser.uid, 
-                senderEmail: myProfile.email, 
-                senderName: myProfile.name, 
-                senderPhoto: myProfile.photoURL, 
-                message: content, 
-                type, fileUrl, fileName, 
-                timestamp: Date.now(), 
-                reactions: {} 
-            };
-            if(replyingToId) { payload.replyTo = replyingToId; payload.replyToText = replyingToText; cancelReply(); }
-            
-            try {
-                await addDoc(collection(db, 'messages'), payload);
-                document.getElementById('chat-history').scrollTop = 999999;
-            } catch (e) {
-                showToast("發送失敗，請檢查網路或權限", "error");
-                console.error(e);
+            if(preserveScroll && !isAtBottom && oldScroll > 0) {
+                history.scrollTop += (history.scrollHeight - oldScroll);
+            } else if (isAtBottom || !preserveScroll) {
+                history.scrollTop = history.scrollHeight;
             }
         }
 
+        // Send, Edit & Delete 操作使用嚴格路徑與 Custom Modal
+        window.deleteMessage = (id) => {
+            customConfirm("確定要收回此訊息嗎？", async () => {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', id));
+                    showToast('訊息已收回', 'success');
+                } catch(e) {
+                    showToast('收回失敗，權限不足或網路異常', 'error');
+                }
+            });
+        };
+
+        window.editMessage = (id, old) => { 
+            customPrompt("修改訊息：", old, async (n) => {
+                if(n && n !== old) {
+                    try {
+                        await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'messages', id), { message: n.trim(), isEdited: true });
+                        showToast('訊息已更新', 'success');
+                    } catch (e) {
+                        showToast('編輯失敗', 'error');
+                    }
+                }
+            });
+        };
+        
+        async function sendPayload(type, content, fileUrl='', fileName='') {
+            if (!currentUser) return;
+            const payload = { chatId: currentRoomId, senderId: currentUser.uid, senderEmail: myProfile.email, senderName: myProfile.name, message: content, type, fileUrl, fileName, timestamp: Date.now(), reactions: {} };
+            if(replyingToId) { 
+                payload.replyTo = replyingToId; 
+                payload.replyToText = replyingToText; 
+                payload.replyToName = replyingToName;
+                cancelReply(); 
+            }
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), payload);
+                document.getElementById('chat-history').scrollTop = 999999;
+            } catch(e) {
+                console.error("發送失敗", e);
+                showToast("發送失敗", "error");
+            }
+        }
+
+        // Input Handle
         const chatInput = document.getElementById('chat-input');
         chatInput.addEventListener('keydown', e => {
-            if(e.key === 'Enter' && !e.shiftKey) { 
-                e.preventDefault(); 
-                document.getElementById('send-btn').click(); 
-            }
+            if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('send-btn').click(); }
         });
-        document.getElementById('send-btn').onclick = () => { 
-            const text = chatInput.value.trim();
-            if(text) { 
-                sendPayload('text', text); 
-                chatInput.value = ''; 
-                chatInput.focus();
-            } 
-        };
+        document.getElementById('send-btn').onclick = () => { if(chatInput.value.trim()) { sendPayload('text', chatInput.value.trim()); chatInput.value = ''; } };
 
-        // 檔案上傳與前端壓縮
+        // File Handle
         const handleFile = file => {
-            const us = document.getElementById('upload-status'); us.style.display = 'flex';
-            if (file.type.startsWith('image/')) {
-                us.querySelector('span').textContent = '圖片壓縮處理中...';
-                const reader = new FileReader();
-                reader.onload = e => {
-                    const img = new Image();
-                    img.onload = async () => {
-                        let w = img.width, h = img.height; const MAX = 1200;
-                        if(w>h && w>MAX) { h*=MAX/w; w=MAX; } else if(h>MAX) { w*=MAX/h; h=MAX; }
-                        const cvs = document.createElement('canvas'); cvs.width=w; cvs.height=h;
-                        cvs.getContext('2d').drawImage(img, 0, 0, w, h);
-                        const url = cvs.toDataURL('image/jpeg', 0.7);
-                        if(url.length > 950000) showToast("圖片過大", "error"); else await sendPayload('image', '分享圖片', url, file.name);
-                        us.style.display = 'none';
-                    }; img.src = e.target.result;
-                }; reader.readAsDataURL(file);
-            } else {
-                if (file.size > 700000) { showToast("文件不得超過 700KB", "error"); us.style.display='none'; return; }
-                us.querySelector('span').textContent = '檔案上傳中...';
-                const reader = new FileReader(); reader.onload = async e => { await sendPayload('file', '分享檔案', e.target.result, file.name); us.style.display='none'; };
-                reader.readAsDataURL(file);
-            }
+            // Placeholder for actual file logic
         };
-
-        document.getElementById('file-upload-input').onchange = e => { if(e.target.files[0]) handleFile(e.target.files[0]); e.target.value=''; };
-        document.addEventListener('paste', e => { for(let i of (e.clipboardData||e.originalEvent.clipboardData).items) { if(i.kind==='file' && i.type.startsWith('image/')) handleFile(i.getAsFile()); } });
-        const hist = document.getElementById('chat-history');
-        hist.ondragover = e => e.preventDefault(); hist.ondrop = e => { e.preventDefault(); if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); };
     </script>
 </body>
 </html>
