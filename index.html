@@ -365,14 +365,21 @@
         enableIndexedDbPersistence(db).catch(err => console.warn("Offline DB unavailable, falling back to online only.", err));
 
         // State
-        let currentUser = null, myProfile = { name: '', email: '' };
-        let currentRoomId = 'lobby', currentRoomName = '大廳公用頻道';
-        let allMessages = [], msgLimit = 50; 
-        let unsubscribeSnapshot = null, unsubscribeTyping = null, typingTimeout = null;
-        let replyingToId = null, replyingToText = null, replyingToName = null;
+        let currentUser = null;
+        let myProfile = { name: '', email: '' };
+        let currentRoomId = 'lobby'; 
+        let currentRoomName = '大廳公用頻道';
+        let allMessages = [];
+        let msgLimit = 50; 
+        let unsubscribeSnapshot = null;
+        let unsubscribeTyping = null;
+        let typingTimeout = null;
+        let replyingToId = null;
+        let replyingToText = null;
+        let replyingToName = null;
         let isWindowFocused = true;
         let roomLastRead = JSON.parse(localStorage.getItem('flowchat_reads')) || {};
-        let sessionDMs = new Set(); // 新增：記錄當前連線中主動發起的私訊對象
+        let sessionDMs = new Set(); 
 
         // 避免 Prompt / Confirm 在 Canvas 遭阻擋，使用自訂 Modal
         let confirmAction = null;
@@ -381,6 +388,7 @@
             confirmAction = onYes;
             openModal('confirm-modal');
         };
+        
         document.getElementById('confirm-yes-btn').onclick = () => {
             if(confirmAction) confirmAction();
             closeModal('confirm-modal');
@@ -395,6 +403,7 @@
             openModal('prompt-modal');
             input.focus();
         };
+        
         document.getElementById('prompt-yes-btn').onclick = () => {
             if(promptAction) promptAction(document.getElementById('prompt-input').value);
             closeModal('prompt-modal');
@@ -413,14 +422,51 @@
 
         // Utils
         const escapeHtml = t => (t||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+        
         window.showToast = (msg, type='info') => {
-            const c = document.getElementById('toast-container'), t = document.createElement('div');
-            t.className = `toast ${type}`; t.innerHTML = msg; c.appendChild(t);
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`; 
+            t.innerHTML = msg; 
+            c.appendChild(t);
             setTimeout(() => t.classList.add('show'), 10);
-            setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(), 300); }, 3000);
+            setTimeout(() => { 
+                t.classList.remove('show'); 
+                setTimeout(()=>t.remove(), 300); 
+            }, 3000);
         };
+        
         const getDmRoomId = (e1, e2) => 'dm_' + [e1.toLowerCase(), e2.toLowerCase()].sort().join('|');
-        const playSound = () => { try { const c = new (window.AudioContext || window.webkitAudioContext)(); const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(587.33, c.currentTime); o.frequency.setValueAtTime(880, c.currentTime+0.1); g.gain.setValueAtTime(0.1, c.currentTime); g.gain.exponentialRampToValueAtTime(0.01, c.currentTime+0.4); o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+0.4); } catch(e){} };
+        
+        // 音效模組: 收到訊息
+        const playReceiveSound = () => { 
+            try { 
+                const c = new (window.AudioContext || window.webkitAudioContext)(); 
+                const o = c.createOscillator(), g = c.createGain(); 
+                o.type = 'sine'; 
+                o.frequency.setValueAtTime(587.33, c.currentTime); 
+                o.frequency.setValueAtTime(880, c.currentTime+0.1); 
+                g.gain.setValueAtTime(0.1, c.currentTime); 
+                g.gain.exponentialRampToValueAtTime(0.01, c.currentTime+0.4); 
+                o.connect(g); g.connect(c.destination); 
+                o.start(); o.stop(c.currentTime+0.4); 
+            } catch(e){} 
+        };
+
+        // 音效模組: 送出訊息 (較短促的啵聲)
+        const playSendSound = () => {
+            try {
+                const c = new (window.AudioContext || window.webkitAudioContext)();
+                const o = c.createOscillator(), g = c.createGain();
+                o.type = 'sine';
+                o.frequency.setValueAtTime(400, c.currentTime);
+                o.frequency.exponentialRampToValueAtTime(600, c.currentTime + 0.05);
+                g.gain.setValueAtTime(0.05, c.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.1);
+                o.connect(g); g.connect(c.destination);
+                o.start(); o.stop(c.currentTime + 0.1);
+            } catch(e){}
+        };
 
         window.openModal = (id) => { document.getElementById(id).style.display = 'flex'; };
         window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
@@ -471,7 +517,8 @@
 
             document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
             document.getElementById('main-app').classList.add('active');
-            fetchMessages(); setupTypingListener();
+            fetchMessages(); 
+            setupTypingListener();
         }
 
         // 歷史訊息加載
@@ -479,7 +526,6 @@
             if (!currentUser) return;
             if (unsubscribeSnapshot) unsubscribeSnapshot();
             
-            // 恢復使用標準集合路徑，避免複雜權限報錯
             const msgCollection = collection(db, 'messages');
             
             unsubscribeSnapshot = onSnapshot(msgCollection, snapshot => {
@@ -492,7 +538,13 @@
                     const latest = temp[temp.length - 1];
                     const oldLatest = allMessages[allMessages.length - 1];
                     if (latest.id !== oldLatest?.id && latest.senderEmail !== myProfile.email) {
-                        if (!isWindowFocused) { playSound(); document.title = "🔔 新訊息 - FlowChat"; }
+                        if (!isWindowFocused) { 
+                            playReceiveSound(); 
+                            document.title = "🔔 新訊息 - FlowChat"; 
+                        } else {
+                            // 即使在當前視窗，如果是別人傳的也播聲音
+                            playReceiveSound();
+                        }
                     }
                 }
 
@@ -554,7 +606,13 @@
             if(b) { b.textContent = unread; b.style.display = unread > 0 ? 'inline-block' : 'none'; }
         }
 
-        window.hideDM = (email, e) => { e.stopPropagation(); localStorage.setItem(`hidden_${email}`, "true"); sessionDMs.delete(email); if(currentRoomId === getDmRoomId(myProfile.email, email)) switchRoom('lobby', '大廳公用頻道'); renderSidebarContacts(); };
+        window.hideDM = (email, e) => { 
+            e.stopPropagation(); 
+            localStorage.setItem(`hidden_${email}`, "true"); 
+            sessionDMs.delete(email); 
+            if(currentRoomId === getDmRoomId(myProfile.email, email)) switchRoom('lobby', '大廳公用頻道'); 
+            renderSidebarContacts(); 
+        };
         
         window.startPrivateChat = email => { 
             email = email.trim().toLowerCase(); 
@@ -566,7 +624,8 @@
         };
 
         window.switchRoom = (id, name) => {
-            currentRoomId = id; currentRoomName = name;
+            currentRoomId = id; 
+            currentRoomName = name;
             document.getElementById('chat-header-title').textContent = name;
             document.querySelectorAll('.room-item').forEach(el=>el.classList.remove('active'));
             if(id==='lobby') document.getElementById('room-lobby').classList.add('active');
@@ -574,6 +633,9 @@
             renderMessages();
             updateReadReceipt();
             setupTypingListener();
+            cancelReply();
+        };
+
         // 已讀標記
         let readTimeout;
         function updateReadReceipt() {
@@ -582,7 +644,6 @@
             readTimeout = setTimeout(() => {
                 roomLastRead[currentRoomId] = Date.now();
                 localStorage.setItem('flowchat_reads', JSON.stringify(roomLastRead));
-                // 恢復為一般路徑
                 setDoc(doc(db, 'readReceipts', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true }).catch(e=>{});
                 renderSidebarContacts();
             }, 1000);
@@ -592,19 +653,22 @@
         function setupTypingListener() {
             if(!currentUser) return;
             if(unsubscribeTyping) unsubscribeTyping();
-            // 恢復為一般路徑
+            
             unsubscribeTyping = onSnapshot(doc(db, 'typing', currentRoomId), docSnap => {
                 const data = docSnap.data() || {};
                 const typers = Object.keys(data).filter(email => email !== myProfile.email && (Date.now() - data[email] < 3000));
                 const ind = document.getElementById('typing-indicator');
-                if(typers.length > 0) { ind.textContent = `${typers.map(e=>e.split('@')[0]).join(', ')} 正在輸入...`; ind.style.display = 'block'; }
-                else ind.style.display = 'none';
+                if(typers.length > 0) { 
+                    ind.textContent = `${typers.map(e=>e.split('@')[0]).join(', ')} 正在輸入...`; 
+                    ind.style.display = 'block'; 
+                } else {
+                    ind.style.display = 'none';
+                }
             }, e=>{});
         }
         
         document.getElementById('chat-input').addEventListener('input', () => {
             if(!typingTimeout && currentUser && myProfile.email) {
-                // 恢復為一般路徑
                 setDoc(doc(db, 'typing', currentRoomId), { [myProfile.email]: Date.now() }, { merge: true }).catch(e=>{});
                 typingTimeout = setTimeout(()=> { typingTimeout = null; }, 2000);
             }
@@ -630,11 +694,13 @@
             document.getElementById('chat-input-container').classList.add('reply-active');
             document.getElementById('chat-input').focus();
         };
+        
         window.cancelReply = () => { 
             replyingToId = null; 
             document.getElementById('reply-banner').style.display = 'none'; 
             document.getElementById('chat-input-container').classList.remove('reply-active');
         };
+        
         window.scrollToMsg = (id) => {
             const el = document.getElementById(`msg-${id}`);
             if (el) {
@@ -651,7 +717,6 @@
             const reacts = msg.reactions || {};
             const users = reacts[emoji] || [];
             let newUsers = users.includes(myProfile.email) ? users.filter(u => u !== myProfile.email) : [...users, myProfile.email];
-            // 恢復為一般路徑
             await updateDoc(doc(db, 'messages', msgId), { [`reactions.${emoji}`]: newUsers }).catch(e=>{});
         };
 
@@ -659,7 +724,6 @@
         let globalReadStates = {};
         const runReadSnap = () => {
             if(!currentUser) return;
-            // 恢復為一般路徑
             onSnapshot(collection(db, 'readReceipts'), snap => { 
                 snap.forEach(d => globalReadStates[d.id] = d.data()); 
                 renderMessages(); 
@@ -770,11 +834,13 @@
                 history.scrollTop += (history.scrollHeight - oldScroll);
             } else if (isAtBottom || !preserveScroll) {
                 history.scrollTop = history.scrollHeight;
+            }
+        }
+
         // Send, Edit & Delete 操作使用 Custom Modal
         window.deleteMessage = (id) => {
             customConfirm("確定要收回此訊息嗎？", async () => {
                 try {
-                    // 恢復為一般路徑
                     await deleteDoc(doc(db, 'messages', id));
                     showToast('訊息已收回', 'success');
                 } catch(e) {
@@ -787,7 +853,6 @@
             customPrompt("修改訊息：", old, async (n) => {
                 if(n && n !== old) {
                     try {
-                        // 恢復為一般路徑
                         await updateDoc(doc(db, 'messages', id), { message: n.trim(), isEdited: true });
                         showToast('訊息已更新', 'success');
                     } catch (e) {
@@ -799,7 +864,18 @@
         
         async function sendPayload(type, content, fileUrl='', fileName='') {
             if (!currentUser) return;
-            const payload = { chatId: currentRoomId, senderId: currentUser.uid, senderEmail: myProfile.email, senderName: myProfile.name, message: content, type, fileUrl, fileName, timestamp: Date.now(), reactions: {} };
+            const payload = { 
+                chatId: currentRoomId, 
+                senderId: currentUser.uid, 
+                senderEmail: myProfile.email, 
+                senderName: myProfile.name, 
+                message: content, 
+                type, 
+                fileUrl, 
+                fileName, 
+                timestamp: Date.now(), 
+                reactions: {} 
+            };
             if(replyingToId) { 
                 payload.replyTo = replyingToId; 
                 payload.replyToText = replyingToText; 
@@ -807,9 +883,9 @@
                 cancelReply(); 
             }
             try {
-                // 恢復為一般路徑
                 await addDoc(collection(db, 'messages'), payload);
                 document.getElementById('chat-history').scrollTop = 999999;
+                playSendSound(); // 送出成功時播放氣泡音效
             } catch(e) {
                 console.error("發送失敗", e);
                 showToast("發送失敗，請確認資料庫權限設定", "error");
@@ -819,11 +895,20 @@
         // Input Handle
         const chatInput = document.getElementById('chat-input');
         chatInput.addEventListener('keydown', e => {
-            if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('send-btn').click(); }
+            if(e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                document.getElementById('send-btn').click(); 
+            }
         });
-        document.getElementById('send-btn').onclick = () => { if(chatInput.value.trim()) { sendPayload('text', chatInput.value.trim()); chatInput.value = ''; } };
+        
+        document.getElementById('send-btn').onclick = () => { 
+            if(chatInput.value.trim()) { 
+                sendPayload('text', chatInput.value.trim()); 
+                chatInput.value = ''; 
+            } 
+        };
 
-        // File Handle
+        // File Handle (保留為未來實作)
         const handleFile = file => {
             // Placeholder for actual file logic
         };
